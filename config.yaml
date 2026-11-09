@@ -1,0 +1,16 @@
+index: {version: v1, dir: .cache/index}
+embeddings: {model: BAAI/bge-small-en-v1.5, batch_size: 32}
+chunking: {child_tokens: 256, overlap_tokens: 32, context_prefix: true}
+retrieval: {top_k: 20, rrf_k: 60, use_router_filter: true}
+rerank: {enabled: true, model: Xenova/ms-marco-MiniLM-L-6-v2, top_n: 5}
+llm:
+  primary: {provider: gemini, model: gemini-2.5-flash, rpm: 10, daily_budget: 200}
+  fallback: {provider: groq, model: llama-3.3-70b-versatile, rpm: 25, daily_budget: 1000}
+  temperature: 0
+  timeout_s: 30
+  max_retries: 2          # per provider, with exponential backoff, then switch provider
+  cache_dir: .cache/llm
+  budget_warn_ratio: 0.8  # stop and tell the user at 80% of a daily budget
+cache: {enabled: true, threshold: 0.95}
+acl: {default: "*", users: {}}
+eval: {dev_ratio: 0.5, seed: 42}
