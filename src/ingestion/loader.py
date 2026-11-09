@@ -20,15 +20,24 @@ def setup_logging(log_file: str) -> None:
 
 
 def load_corpus(
-    raw_dir: Path, docs_json: Path, parsed_dir: Path | None = None
+    raw_dir: Path, docs_json: Path, parsed_dir: Path | None = None, reuse_parsed: bool = False
 ) -> list[tuple[DocMeta, list[Page]]]:
-    """Parse every PDF listed in docs.json; write per-doc JSONL to parsed_dir if given."""
+    """Parse every PDF listed in docs.json; write per-doc JSONL to parsed_dir if given.
+
+    With reuse_parsed, an existing parsed JSONL is read instead of re-parsing the PDF (parsing the
+    full corpus takes ~15 minutes).
+    """
     raw_dir = Path(raw_dir)
     docs = json.loads(Path(docs_json).read_text(encoding="utf-8"))
     if parsed_dir is not None:
         Path(parsed_dir).mkdir(parents=True, exist_ok=True)
     corpus = []
     for doc_id, meta in docs.items():
+        cached = Path(parsed_dir) / f"{doc_id}.jsonl" if parsed_dir is not None else None
+        if reuse_parsed and cached is not None and cached.exists():
+            lines = cached.read_text(encoding="utf-8").splitlines()
+            corpus.append((DocMeta(**meta), [Page(**json.loads(l)) for l in lines if l.strip()]))
+            continue
         pages = parse_pdf(raw_dir / f"{doc_id}.pdf", doc_id=doc_id)
         if parsed_dir is not None:
             out = Path(parsed_dir) / f"{doc_id}.jsonl"

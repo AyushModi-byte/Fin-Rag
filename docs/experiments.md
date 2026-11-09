@@ -23,3 +23,9 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 
 | Question id | Cause (retrieval miss / table parse / reasoning / judge) | Fix |
 |-------------|-----------------------------------------------------------|-----|
+
+## Index builds
+
+| Date | Index version | Embedding model | Docs | Chunks (dense / BM25) | Build time | Notes |
+|------|---------------|-----------------|------|------------------------|------------|-------|
+| 2026-11-09 | v1 | BAAI/bge-small-en-v1.5 (384-d) | 22 | 15925 / 15925 | 11558.3 s (as reported by the job, includes embedding on CPU; parsed pages reused) | child_tokens 256, overlap 32, context prefix on. Index size 104 MB. Time is far above the ~15 min parse; wall-clock may include machine sleep, not re-measured. |
