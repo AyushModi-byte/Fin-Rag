@@ -1,0 +1,134 @@
+{
+  "VERIZON_2022_10K": {
+    "doc_id": "VERIZON_2022_10K",
+    "company": "Verizon",
+    "fiscal_year": 2022,
+    "doc_type": "10-K"
+  },
+  "AMD_2022_10K": {
+    "doc_id": "AMD_2022_10K",
+    "company": "AMD",
+    "fiscal_year": 2022,
+    "doc_type": "10-K"
+  },
+  "ADOBE_2022_10K": {
+    "doc_id": "ADOBE_2022_10K",
+    "company": "Adobe",
+    "fiscal_year": 2022,
+    "doc_type": "10-K"
+  },
+  "BOEING_2022_10K": {
+    "doc_id": "BOEING_2022_10K",
+    "company": "Boeing",
+    "fiscal_year": 2022,
+    "doc_type": "10-K"
+  },
+  "AMERICANEXPRESS_2022_10K": {
+    "doc_id": "AMERICANEXPRESS_2022_10K",
+    "company": "American Express",
+    "fiscal_year": 2022,
+    "doc_type": "10-K"
+  },
+  "3M_2022_10K": {
+    "doc_id": "3M_2022_10K",
+    "company": "3M",
+    "fiscal_year": 2022,
+    "doc_type": "10-K"
+  },
+  "AMCOR_2023_10K": {
+    "doc_id": "AMCOR_2023_10K",
+    "company": "Amcor",
+    "fiscal_year": 2023,
+    "doc_type": "10-K"
+  },
+  "BESTBUY_2023_10K": {
+    "doc_id": "BESTBUY_2023_10K",
+    "company": "Best Buy",
+    "fiscal_year": 2023,
+    "doc_type": "10-K"
+  },
+  "PEPSICO_2022_10K": {
+    "doc_id": "PEPSICO_2022_10K",
+    "company": "PepsiCo",
+    "fiscal_year": 2022,
+    "doc_type": "10-K"
+  },
+  "CVSHEALTH_2022_10K": {
+    "doc_id": "CVSHEALTH_2022_10K",
+    "company": "CVS Health",
+    "fiscal_year": 2022,
+    "doc_type": "10-K"
+  },
+  "VERIZON_2021_10K": {
+    "doc_id": "VERIZON_2021_10K",
+    "company": "Verizon",
+    "fiscal_year": 2021,
+    "doc_type": "10-K"
+  },
+  "BESTBUY_2017_10K": {
+    "doc_id": "BESTBUY_2017_10K",
+    "company": "Best Buy",
+    "fiscal_year": 2017,
+    "doc_type": "10-K"
+  },
+  "3M_2018_10K": {
+    "doc_id": "3M_2018_10K",
+    "company": "3M",
+    "fiscal_year": 2018,
+    "doc_type": "10-K"
+  },
+  "AMD_2015_10K": {
+    "doc_id": "AMD_2015_10K",
+    "company": "AMD",
+    "fiscal_year": 2015,
+    "doc_type": "10-K"
+  },
+  "ADOBE_2017_10K": {
+    "doc_id": "ADOBE_2017_10K",
+    "company": "Adobe",
+    "fiscal_year": 2017,
+    "doc_type": "10-K"
+  },
+  "AMCOR_2020_10K": {
+    "doc_id": "AMCOR_2020_10K",
+    "company": "Amcor",
+    "fiscal_year": 2020,
+    "doc_type": "10-K"
+  },
+  "BESTBUY_2019_10K": {
+    "doc_id": "BESTBUY_2019_10K",
+    "company": "Best Buy",
+    "fiscal_year": 2019,
+    "doc_type": "10-K"
+  },
+  "ADOBE_2015_10K": {
+    "doc_id": "ADOBE_2015_10K",
+    "company": "Adobe",
+    "fiscal_year": 2015,
+    "doc_type": "10-K"
+  },
+  "PEPSICO_2021_10K": {
+    "doc_id": "PEPSICO_2021_10K",
+    "company": "PepsiCo",
+    "fiscal_year": 2021,
+    "doc_type": "10-K"
+  },
+  "CVSHEALTH_2018_10K": {
+    "doc_id": "CVSHEALTH_2018_10K",
+    "company": "CVS Health",
+    "fiscal_year": 2018,
+    "doc_type": "10-K"
+  },
+  "ADOBE_2016_10K": {
+    "doc_id": "ADOBE_2016_10K",
+    "company": "Adobe",
+    "fiscal_year": 2016,
+    "doc_type": "10-K"
+  },
+  "BOEING_2018_10K": {
+    "doc_id": "BOEING_2018_10K",
+    "company": "Boeing",
+    "fiscal_year": 2018,
+    "doc_type": "10-K"
+  }
+}
