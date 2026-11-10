@@ -7,11 +7,11 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 | 0 | 2026-11-10 | Baseline: dense + BM25 + RRF, no rerank, no routing (top_k 20 -> top 5 to the LLM; Groq gpt-oss-120b only) | 0.172 | 0.108 | 0.207 | 0.947 (n=10) | 2441 ms | baseline |
 | 1 | 2026-11-10 | + company/year metadata filter (`retrieval.use_router_filter: true`) | 0.207 | 0.124 | 0.448 | 0.900 (n=17) | 3012 ms | keep |
 | 2 | 2026-11-10 | + cross-encoder rerank (top_k 20 -> top_n 5; `rerank.enabled: true`, on top of exp 1) | 0.172 | 0.099 | 0.310 | 0.905 (n=13) | 2455 ms | revert |
-| 3 | | Child chunk size 256 / 384 / 512 | | | | | | |
-| 4 | | Context prefix on/off | | | | | | |
-| 5 | | RRF vs weighted fusion | | | | | | |
-| 6 | | Parent-page expansion for generation | | | | | | |
-| 7 | | Numeric-reasoning prompt | | | | | | |
+| 3 | 2026-11-10 | Child chunk size 256 / 300 / 384 (offline pilot, mxbai-large, 11 questions; see Phase 2c) | n/a | n/a | n/a | n/a | n/a | 300 kept (all within noise; 256 and 384 project to about 2.0 h, the build gate) |
+| 4 | | Context prefix on/off | | | | | | not tested (prefix kept on; v2 prefix with heading + units was only checked on one page in Phase 2b) |
+| 5 | 2026-11-10 | RRF vs weighted fusion | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | 2344 ms | done as experiment 12 (BM25 weight 0.25): keep |
+| 6 | 2026-11-10 | Parent expansion for generation | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | 3338 ms | done as experiment 13: not adopted |
+| 7 | 2026-11-10 | Numeric-reasoning prompt | 0.586 | 0.452 | 0.552 | 0.846 (n=22) | 3669 ms | done as experiment 14: reverted |
 | 8 | 2026-11-10 | Router year parsing: FY22 two-digit years + latest year when several are named (from the failure analysis; on top of exp 1) | 0.310 | 0.153 | 0.517 | 0.904 (n=19) | 2002 ms | keep |
 | 9 | 2026-11-10 | Drop chunks under 15 tokens at retrieval (`retrieval.min_chunk_tokens: 0 -> 15`; from the failure analysis; on top of exp 8) | 0.345 | 0.196 | 0.517 | 0.909 (n=19) | 1672 ms | keep |
 | 10 | 2026-11-10 | **Index v2** (one re-index): chunker v2 (embedder-tokenizer sizing, table row groups, rich prefix), mxbai-embed-large-v1, BM25 v2 (stemming), `index.version: v2`; router + min_chunk_tokens 15, rerank off | 0.517 | 0.411 | 0.552 | 0.908 (n=21) | 2553 ms | keep |
@@ -134,7 +134,46 @@ Candidates are the current hybrid results (mxbai-large, BM25 weight 0.25, router
 |----------|-----|----------|--------------|-----|-----|
 | | | | | | |
 
-## Failure analysis (10 worst dev questions)
+## v1 best vs v2 baseline vs final (dev split, n=29, one run each, numbers exactly as measured)
+
+| Config | recall@5 | MRR | accuracy | faithfulness | "I don't know" | p50 latency | run file |
+|---|---|---|---|---|---|---|---|
+| Naive baseline (exp 0: no router, no rerank) | 0.172 | 0.108 | 0.207 (6/29) | 0.947 (n=10) | 19 | 2441 ms | `20261110T061837_dev.json` |
+| **v1 best** (exp 9: v1 index + router + year fix + min chunk 15) | 0.345 (10/29) | 0.196 | 0.517 (15/29) | 0.909 (n=19) | 10 | 1672 ms* | `20261110T070512_dev.json` |
+| **v2 baseline** (exp 10: v2 index, same query-time settings) | 0.517 (15/29) | 0.411 | 0.552 (16/29) | 0.908 (n=21) | 8 | 2553 ms | `20261110T133621_dev.json` |
+| **Final** (exp 12: v2 + BM25 weight 0.25) | **0.586 (17/29)** | **0.452** | **0.586 (17/29)** | **0.930 (n=22)** | **7** | 2344 ms | `20261110T140849_dev.json` |
+
+\* latency is over only the questions whose answer was not already cached, so it is indicative; v2 retrieval costs about 290 ms per query (mxbai-large on CPU) of which most is query embedding.
+
+Final config: v2 index (chunker v2: embedder-tokenizer sizing, table row groups, prefix `{company} FY{year} 10-K | page | heading | units`, child 300 / overlap 40 / cap 480; `mixedbread-ai/mxbai-embed-large-v1` 1024-d, no query prefix; BM25 v2 with stemming), router with year fix, `retrieval.min_chunk_tokens: 15`, weighted fusion 1.0 dense : 0.25 BM25 with `rrf_k: 60`, top_k 20, rerank off, top_n 5, prompt `grounded_v1`, no parent expansion. Answers, accuracy judge and faithfulness judge all by Groq `openai/gpt-oss-120b`.
+
+Caveats: n=29, so one question is 0.034 of recall or accuracy; the BM25 weight was chosen on this same dev set (3 values tried); accuracy and faithfulness come from an LLM judge and an answerer with some run-to-run noise (an unchanged config swapped +1/-1 questions in exp 9). The test split has NOT been run (Task 11).
+
+## Failure analysis, final config (12 wrong dev answers; run `20261110T140849_dev.json`, offline, no LLM calls)
+
+12 of 29 answers are incorrect (v1: 14): 7 are "I don't know" (00720, 00799, 01279, 01981, 03856, 03882, 04735) and 5 are wrong answers (00438, 00566, 00585, 01009, 01226). Retrieval rank = first gold page in the production top 20 (blank = not in it); deep rank = same from a depth-100 list.
+
+| Question id | Gold page(s): rank (top 20 / deep) | Cause | Fix candidates |
+|---|---|---|---|
+| 00720 | p.96: none / 33 | Retrieval miss + no natural evidence page. AmEx "what drove gross margin", gold answer is "not measured through gross margin" (a non-applicability question). Answered "I don't know". | Not fixable by retrieval; judge/gold style. Largest v1 -> v2 regression (18 -> 33 deep). |
+| 00799 | p.52: none / 39 | Retrieval miss + derived metric. Amcor quick ratio is never named on the balance-sheet page. "I don't know". | Ratio-term expansion (rule based): "quick ratio" -> cash, short-term investments, receivables, current liabilities. Untested. |
+| 01981 | p.45: none / 57 | Retrieval miss. Vague qualitative AmEx retention question (gold "Yes"). | Query rewriting; untested. |
+| 01009 | p.4-5: 9 / 2 | Gold ranks 9th in the production list but 2nd in a deeper fusion: fusion depth matters. Our answer cited "200 countries" from p.32, not the geography list. | Wider candidate pool: top_k 30 lifted MRR in the rerank study (0.452 -> 0.477); untested end to end. |
+| 01226 | p.27: 9 / 10 | Retrieval miss. 3M operating-margin drivers; p.30/31/20/21 (related MD&A pages) outrank p.27. Answer is a plausible table of drivers judged incorrect against the gold list. | Statement/section-aware boost; untested. |
+| 00438 | p.54: 7 / 10 | Retrieval miss (was 26th in v1). Adobe operating margin FY22; gold is the income statement (p.54), our top 5 were MD&A pages. Margin has to be computed. | Statement-type boost; untested. |
+| 00585 | p.55: 7 / 6 | Retrieval miss. Boeing effective tax rate; answered from p.24 with the sign lost (-0.6 / 14.8 vs gold 0.62 / -14.76). | top_n 8 would include it (gold at deep rank 6; experiment not completed, see exp 16). |
+| 01279 | p.58: 6 / 6 | Retrieval miss by one position. AMD cash flow by activity; p.52 x3, p.59, p.51 in the top 5. Answered "I don't know". | top_n 8 (not completed). |
+| 00566 | p.77: 4 / 1 | **Reasoning**: gold page retrieved. Verizon debt change: summed the wrong line items and concluded "Yes" (gold: debt fell by $229 million). | Reasoning prompt did not help (exp 14). |
+| 03882 | p.50: 3 / 3 | Gold page retrieved at rank 3 but "I don't know" for Amcor net AR; the needed line item is probably in a different row group of the table (not verified). | Parent expansion did not change it (exp 13), so cause unclear; inspect the chunk. |
+| 03856 | p.57, p.61: 1 / 1 | **Two pages needed.** Adobe operating cash flow ratio needs cash from operations (p.61) and current liabilities (p.57); only p.61 is in the top 5, so the ratio cannot be computed. Page-level recall@5 counts this as a hit. | Multi-page retrieval: diversify top_n across pages; untested. |
+| 04735 | p.59, p.63: 1 / 1 | Same pattern: gold p.63 in the top 5, p.59 missing; "I don't know". | Same. |
+
+What this says: 8 of the 12 are retrieval misses (gold page not in the top 5: 00720, 00799, 01981, 01009, 01226, 00438, 00585, 01279; of these 00720 is a non-applicability question and 01981 a vague qualitative one, and four more sit at rank 6 to 10, so they are near misses). The other 4 had a gold page in the top 5: 03856 and 04735 are two-page ratios where only one of the two needed pages was retrieved (page-level recall@5 counts them as hits, which hides this), 00566 is a wrong computation, and 03882 is unexplained (probably the needed row sits in another row group). No judge errors were found.
+
+## Failure analysis, v1 config (historical, from experiment 1; superseded by the section above)
+
+### v1 table (kept for the record)
+
 
 | Question id | Cause (retrieval miss / table parse / reasoning / judge) | Fix |
 |-------------|-----------------------------------------------------------|-----|
