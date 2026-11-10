@@ -14,6 +14,8 @@ def setup_logging(log_file: str) -> None:
     Path(log_file).parent.mkdir(parents=True, exist_ok=True)
     handler = logging.FileHandler(log_file, encoding="utf-8")
     handler._finrag_file = True
+    # trace lines go to the log as bare JSON through their own handler (observability/tracing.py)
+    handler.addFilter(lambda record: not record.name.startswith("finrag.trace"))
     handler.setFormatter(logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)

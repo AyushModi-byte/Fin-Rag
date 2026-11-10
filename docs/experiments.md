@@ -21,6 +21,7 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 | 14 | 2026-11-10 | 5f: numeric-reasoning prompt `grounded_v2` (formula, units, fiscal-year check, "I don't know" only if a number is absent; `generation.prompt_version`; on top of exp 12) | 0.586 | 0.452 | 0.552 | 0.846 (n=22) | 3669 ms | revert (accuracy and faithfulness worse) |
 | 15 | 2026-11-10 | 5b: cross-encoder rerank on top of exp 12 (offline, all 29 dev questions: MiniLM-L12, jina-turbo, bge-reranker-base, bge-reranker-v2-m3-int8; pool top_k 20 and 30) | best 0.621 (jina-turbo, k20) vs 0.586 | all lower than 0.452 (best 0.387) | n/a | n/a | 1.3 to 11.9 s per question | not adopted (no eval spent) |
 | 16 | 2026-11-10 | 5d: `rerank.top_n` 5 -> 8 (chunks given to the LLM; on top of exp 12) | n/a | n/a | n/a (invalid run: 11/29 errors) | n/a | n/a | **not completed** (Groq tokens-per-day limit); rerun when the quota frees |
+| 17 | 2026-11-11 | Task 10 check (no tuning): cache, tracing, ACL, PII redaction, API added around the unchanged pipeline; eval builds the pipeline without the cache | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | n/a (all 29 answers and 73 judge calls served from the LLM disk cache, 0 API calls) | no regression; run `20261110T204907_dev.json` |
 
 ### Baseline notes (row 0)
 
@@ -127,6 +128,13 @@ Candidates are the current hybrid results (mxbai-large, BM25 weight 0.25, router
 - Offline prefilter: with the current retrieval, gold page in the top 5 for 18 questions, at rank 6 for 3 (00585, 00790, 01279), ranks 10 to 14 for 4 more; so top_n 8 can only help up to 3 questions.
 - The dev run (`data/eval/runs/20261110T153328_dev.json`) is **invalid: 11 of 29 questions errored with Groq HTTP 429 on tokens per day (TPD)**: two of the three accounts reported 199,087 and 198,001 of 200,000 tokens used. Its recall@5 0.379 and accuracy 0.345 are NOT results of top_n 8 and must not be quoted. 18 answers were served before the quota ran out and are in the LLM disk cache, so a rerun needs only about 11 new answers plus judges.
 - Root cause on our side: `LLMClient` counts requests per key per day (719 of 3,000 today) but not tokens, so its 80% guard never fired. Config reverted to `top_n: 5`. **Fixed afterwards (commit `c1fe39f`):** `LLMClient` now counts tokens per key from each response's `usage` block, stops at 80% of `llm.primary.daily_token_budget` (200,000), and a 429 naming a per-day limit retires that key for the day instead of sleeping on the provider's hint. 5d itself is still untested (skipped by decision).
+
+### Experiment 17 notes (Task 10 regression check, not a tuning change)
+
+- Same four metrics as experiment 12, to three decimals, n=29, errors 0, 7 "I don't know". Everything came from the LLM disk cache (the prompts are byte-identical), so there is no latency figure and no tokens were spent. This shows the pipeline refactor (tracing, redaction, ACL hook) did not change what is retrieved or asked; it is not a fresh measurement of the LLM.
+- PII redaction runs on the question inside the pipeline. Checked beforehand: none of the 150 FinanceBench questions matches the e-mail or phone patterns, so eval prompts are unchanged.
+- Live check (`python main.py`, `curl`): `/health` ok, empty question 422, a Verizon dev question answered in 11.9 s the first time (includes loading the embedding model; the answer came from the LLM disk cache), then 0.2 s end to end from the semantic cache (1.5 ms inside the pipeline). A question containing an e-mail address reached the log redacted (0 occurrences of the address in `logs/app.log`).
+- **Found, not fixed (out of Task 10 scope, would change eval inputs):** the model sometimes writes citations in full-width brackets, `【VERIZON_2022_10K p.23】`, which `parse_citations` does not match, so `citations` comes back empty although the answer cites a page. Accuracy and faithfulness do not use `citations`; recall/MRR use the retrieved list. Needs a decision before Task 11 reports citations.
 
 ## Final (test split, run once)
 

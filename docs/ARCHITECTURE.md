@@ -39,15 +39,15 @@ question -> security/acl + redact -> cache/semantic_cache (hit? return)
 | retrieval | retriever.py | Hybrid search, weighted RRF, tiny-chunk filter |
 | rerank | reranker.py | Cross-encoder rerank (disabled, see Decisions) |
 | query | query_router.py | Rule-based company/year detection, scope check |
-| cache | semantic_cache.py | Exact then similarity cache |
+| cache | semantic_cache.py | Exact then similarity cache (`cache.threshold` 0.95); similarity hits need the same company/year scope; JSON file `cache.path`, dropped when index version, prompt version or LLM model changes. Used by the API only, never by the eval |
 | prompts | prompt_templates.py | Versioned prompts (`grounded_v1` active, `grounded_v2` tested and rejected) |
 | llm | llm_client.py | Groq client: key rotation, retries, backoff with provider hints, disk cache, throttle, per-key daily request and token budgets |
 | generation | grounded_answer.py | Answer with `[doc_id p.N]` citations or `I don't know` |
 | generation | context_expansion.py | Replace a retrieved table row group with its full table (flag `generation.expand_tables`, off) |
 | eval | rag_metrics.py | recall@k, MRR, LLM-judge accuracy, faithfulness |
-| observability | tracing.py | Per-stage latency, JSON logs |
-| security | acl.py | Per-user company ACL, PII redaction |
-| api | routes.py | `POST /query`, `GET /health` |
+| observability | tracing.py | `trace(stage, timings)` records per-stage ms into `latency_ms` and writes one bare JSON line per stage to `logs/app.log` |
+| security | acl.py | `allowed_companies(user)` from `acl` in config (`*` = all); `redact_pii` (e-mails, phones) applied to the question before logs, cache, retriever and LLM. A restricted user must name a permitted company (the router detects it even when `use_router_filter` is off), otherwise `I don't know` with no retrieval and no LLM call |
+| api | routes.py | `POST /query {question, user?}` (422 on blank or over `api.max_question_chars`, 503 on LLM budget/outage), `GET /health`; pipeline built on first query; one query at a time (lock) |
 | pipelines | index_pipeline.py, query_pipeline.py | Orchestration only, no logic |
 | jobs | prepare_data.py, index_corpus.py, eval_nightly.py | CLI entry points |
 | jobs | bench_embed.py, pilot_bakeoff.py, compare_indexes.py, fusion_sweep.py, rerank_dev.py | Offline measurement tools (no LLM calls) behind the experiments log |
@@ -115,8 +115,9 @@ llm:
   max_retries: 2
   cache_dir: .cache/llm
   budget_warn_ratio: 0.8
-cache: {enabled: true, threshold: 0.95}
+cache: {enabled: true, threshold: 0.95, path: .cache/semantic_cache.json}
 acl: {default: "*", users: {}}
+api: {host: 127.0.0.1, port: 8000, max_question_chars: 2000}
 eval: {dev_ratio: 0.5, seed: 42, n_companies: 10, min_questions: 50, recall_k: 5, runs_dir: data/eval/runs, judge_max_output_tokens: 4096}
 ```
 

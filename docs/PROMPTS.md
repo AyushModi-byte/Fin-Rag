@@ -2,12 +2,12 @@
 
 ## Where we are (updated 2026-11-10)
 
-Tasks 1-9 are DONE (the Task 9 tuning loop is finished: experiments 0-16 in `docs/experiments.md`, index v2 built, token counting added to `LLMClient`). **Resume at Task 10.** Task 11 follows. Nothing for Tasks 10 and 11 exists yet (`src/cache`, `src/observability`, `src/security`, `src/api` hold only `__init__.py`; no `main.py`, `Dockerfile`, `docker-compose.yaml` or `README.md`).
+Tasks 1-10 are DONE (Task 10: SemanticCache, tracing, ACL, PII redaction, FastAPI `/query` + `/health`, `main.py`; 232 tests pass). **Resume at Task 11** (Docker, final test-split run, README, deploy). Nothing for Task 11 exists yet (no `Dockerfile`, `docker-compose.yaml` or `README.md`).
 
-Last kept dev result, which Task 10's "metrics must not drop" check compares against (experiment 12, run `20261110T140849_dev.json`): recall@5 0.586, MRR 0.452, accuracy 0.586, faithfulness 0.930. The test split has NOT been run; it is reserved for Task 11.
+Last kept dev result, which Task 10 re-checked (experiment 12, run `20261110T140849_dev.json`; re-run for Task 10 gave the identical four numbers, experiment 17): recall@5 0.586, MRR 0.452, accuracy 0.586, faithfulness 0.930. The test split has NOT been run; it is reserved for Task 11.
 
 Things the Task 10 and 11 prompts below do not say, but you should know:
-- Task 10 says `pytest -q`: check the REAL exit status (no piping), 201 tests pass at this point.
+- Run pytest with the real exit status (no piping): 232 tests pass at this point. FastAPI/uvicorn are now in `requirements.txt` (the `.venv` needed `pip install`).
 - The index is `.cache/index/v2` (294 MB, not committed, built with mxbai-large). For Task 11 the Docker image must mount it or rebuild it (about 1.6 h of CPU embedding), and the image needs the embedding model files (0.64 GB) and the Groq keys as `GROQ_API_KEY_1..3` (not `GEMINI_API_KEY`).
 - Task 11's plan text still says "GEMINI_API_KEY as a secret" and "rerank" in the target metrics; both are out of date (Groq only; rerank is off).
 - Before the Task 11 test run, check `LLMClient` token budgets: a full run regenerates about 29+ answers and judge calls on a split of unknown size.

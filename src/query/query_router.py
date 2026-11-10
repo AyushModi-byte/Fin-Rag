@@ -18,6 +18,7 @@ class RoutedQuery:
     filters: dict = field(default_factory=dict)
     query: str = ""
     in_scope: bool = False
+    companies: list = field(default_factory=list)  # every known company named in the question
 
 
 def _company_pattern(name: str) -> re.Pattern:
@@ -40,11 +41,11 @@ def _detect_year(q: str) -> int | None:
 def route(q: str, known_companies: list[str]) -> RoutedQuery:
     companies = _detect_companies(q, known_companies)
     if not companies:
-        return RoutedQuery(filters={}, query=q, in_scope=False)
+        return RoutedQuery(filters={}, query=q, in_scope=False, companies=[])
     filters: dict = {}
     if len(companies) == 1:
         filters["company"] = companies[0]
     year = _detect_year(q)
     if year is not None:
         filters["fiscal_year"] = year
-    return RoutedQuery(filters=filters, query=q, in_scope=True)
+    return RoutedQuery(filters=filters, query=q, in_scope=True, companies=companies)

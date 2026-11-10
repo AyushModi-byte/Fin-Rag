@@ -25,8 +25,9 @@ llm:
   cache_dir: .cache/llm
   budget_warn_ratio: 0.8  # stop and tell the user at 80% of a daily budget
 generation: {expand_tables: false, max_context_tokens: 4000, prompt_version: grounded_v1}
-cache: {enabled: true, threshold: 0.95}
-acl: {default: "*", users: {}}
+cache: {enabled: true, threshold: 0.95, path: .cache/semantic_cache.json}
+acl: {default: "*", users: {}}   # users: {alice: [Adobe, 3M]}; "*" = every company
+api: {host: 127.0.0.1, port: 8000, max_question_chars: 2000}
 eval: {dev_ratio: 0.5, seed: 42, n_companies: 10, min_questions: 50, recall_k: 5, runs_dir: data/eval/runs, judge_max_output_tokens: 4096}
 data:
   questions_url: https://raw.githubusercontent.com/patronus-ai/financebench/main/data/financebench_open_source.jsonl
