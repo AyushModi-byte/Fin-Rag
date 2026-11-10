@@ -17,6 +17,7 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 | 10 | 2026-11-10 | **Index v2** (one re-index): chunker v2 (embedder-tokenizer sizing, table row groups, rich prefix), mxbai-embed-large-v1, BM25 v2 (stemming), `index.version: v2`; router + min_chunk_tokens 15, rerank off | 0.517 | 0.411 | 0.552 | 0.908 (n=21) | 2553 ms | keep |
 | 11 | 2026-11-10 | 5a: query instruction (`Represent this sentence for searching relevant passages: `) ON for mxbai-large (offline only, no eval spent; on top of exp 10) | 0.517 | 0.379 | n/a | n/a | n/a | not adopted (offline: MRR 0.411 -> 0.379, mean rank 13.1 -> 16.6) |
 | 12 | 2026-11-10 | 5e: weighted fusion `retrieval.bm25_weight: 1.0 -> 0.25` (dense weight 1.0; on top of exp 10) | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | 2344 ms | keep |
+| 13 | 2026-11-10 | 5c: parent expansion for generation (`generation.expand_tables: true`, `max_context_tokens: 4000`; on top of exp 12) | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | 3338 ms | not adopted (no change) |
 
 ### Baseline notes (row 0)
 
@@ -85,6 +86,12 @@ The sweep retrieves the dense and BM25 candidate lists once per dev question (sa
 - **5e (experiment 12):** the trend is monotonic: the less weight BM25 gets, the better the ranking, matching the pilot where mxbai's dense ranking beat its hybrid. Adopted 0.25, not the best-scoring 0.1, deliberately: 0.1 is one question better (18 vs 17 at recall@5) but nearly dense-only, and with n=29 and three tried values I prefer to keep BM25 doing real work on exact numbers. `rrf_k` changes did nothing meaningful and were not adopted.
 - **Dev eval for 12** (`data/eval/runs/20261110T140849_dev.json`, zero errors): vs exp 10, recall@5 0.517 -> 0.586 (15/29 -> 17/29; gained 00563, 00566; lost none), MRR 0.411 -> 0.452 (exactly the offline prediction), accuracy 0.552 -> 0.586 (16/29 -> 17/29; gained 04672; lost none), faithfulness 0.908 -> 0.930 (n=21 -> 22), "I don't know" 8 -> 7. Decision: keep. Honest size: +2 questions on recall@5 and +1 on accuracy, small on n=29, but no question got worse and the offline sweep predicted it. Note the weight was chosen on this same dev set (3 values tried), so the test split is the real check.
 - Rollback: set `retrieval.bm25_weight: 1.0` (plain RRF).
+
+### Experiment 13 notes (5c parent expansion)
+
+- Change: each retrieved table row group is replaced by its full table parent in the LLM context (de-duplicated, capped at 4,000 regex tokens, falls back to the fragment when the table does not fit; `src/generation/context_expansion.py`). Retrieval ranking and metrics are untouched. Offline prefilter: the LLM context changes for 10 of 29 dev questions; mean context 1,128 -> 1,315 regex tokens, max 1,767 -> 3,358. Counted run, zero errors: `data/eval/runs/20261110T144247_dev.json`.
+- Result vs exp 12: recall@5 0.586 and MRR 0.452 (unchanged by design), **accuracy 0.586 (17/29), faithfulness 0.930 (n=22), "I don't know" 7: all identical**. 6 answers changed wording (00585, 01226, 02608, 03069, 04672, 07507); none changed verdict; no question gained or lost. Decision: **not adopted** (no improvement, bigger prompts, p50 3338 ms over 10 uncached questions). Code and tests stay, flag default `false`.
+- Why it probably does not help: of the 12 wrong dev answers, 8 are retrieval misses (recall 0) and expansion cannot fix those; the 3 "I don't know" answers with the gold page in the top 5 (03856, 03882, 04735) are not fixed by showing more of the same table, so the cause is reasoning/prompt, or the needed row is on a different page than the one retrieved.
 
 ## Final (test split, run once)
 
