@@ -12,6 +12,7 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 | 5 | | RRF vs weighted fusion | | | | | | |
 | 6 | | Parent-page expansion for generation | | | | | | |
 | 7 | | Numeric-reasoning prompt | | | | | | |
+| 8 | 2026-11-10 | Router year parsing: FY22 two-digit years + latest year when several are named (from the failure analysis; on top of exp 1) | 0.310 | 0.153 | 0.517 | 0.904 (n=19) | 2002 ms | keep |
 
 ### Baseline notes (row 0)
 
@@ -37,6 +38,13 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 - Vs experiment 1 (the config in force before this change): recall@5 0.207 -> 0.172 (6/29 -> 5/29), MRR 0.124 -> 0.099, accuracy 0.448 -> 0.310 (13/29 -> 9/29), "I don't know" answers 12 -> 16. Faithfulness 0.900 -> 0.905 is over different answered sets (n=17 vs n=13), so it is not comparable. Per question: accuracy gained 1 and lost 5; recall gained 1 and lost 2. Decision: revert (both recall@5 and accuracy got worse).
 - Cost: rerank stage p50 about 1.2 s on CPU; end-to-end p50 2455 ms. The p95 of 15467 ms came from Groq rate-limit waits in the LLM stage on 2 questions, not from reranking.
 - Hypothesis (not tested): the general-purpose passage cross-encoder (`Xenova/ms-marco-MiniLM-L-6-v2`) scores table-heavy financial chunks poorly (it truncates long inputs and favors prose that mirrors the question's words), so it pushes numeric tables down. If this is revisited, try a different reranker model as a separate experiment; do not stack it on other changes.
+
+### Experiment 8 notes (router year parsing)
+
+- Change: `query_router._detect_year` now reads "FY22" as 2022 and, when several years are named, filters to the latest (commit `exp 8`; 138 tests pass). No config change, no re-index, no extra LLM calls. Counted run, zero errors: `data/eval/runs/20261110T070256_dev.json`, n=29.
+- Vs experiment 1: recall@5 0.207 -> 0.310 (6/29 -> 9/29), MRR 0.124 -> 0.153, accuracy 0.448 -> 0.517 (13/29 -> 15/29), "I don't know" 12 -> 10. Per question: accuracy gained 2 and lost 0 (ids 00917, 01279, both AMD FY22), recall gained 3 and lost 0. Decision: keep.
+- Latency 2002 ms p50 / 4555 ms p95 is over only the 10 questions whose answer was not already in the disk cache (the other 19 had unchanged context, so their answers were reused); treat as indicative.
+- The offline prototype predicted the year filter would be right for 27 of 29 dev questions (was 15); the retrieval gain is smaller than that headline because many gold pages still rank below the top 5 once the right filing is selected.
 
 ## Final (test split, run once)
 
