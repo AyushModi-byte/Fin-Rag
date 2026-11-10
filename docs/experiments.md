@@ -6,7 +6,7 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 |---|------|--------|----------|-----|----------|--------------|-------------|----------|
 | 0 | 2026-11-10 | Baseline: dense + BM25 + RRF, no rerank, no routing (top_k 20 -> top 5 to the LLM; Groq gpt-oss-120b only) | 0.172 | 0.108 | 0.207 | 0.947 (n=10) | 2441 ms | baseline |
 | 1 | 2026-11-10 | + company/year metadata filter (`retrieval.use_router_filter: true`) | 0.207 | 0.124 | 0.448 | 0.900 (n=17) | 3012 ms | keep |
-| 2 | | + cross-encoder rerank (top_k 20 -> top_n 5) | | | | | | |
+| 2 | 2026-11-10 | + cross-encoder rerank (top_k 20 -> top_n 5; `rerank.enabled: true`, on top of exp 1) | 0.172 | 0.099 | 0.310 | 0.905 (n=13) | 2455 ms | revert |
 | 3 | | Child chunk size 256 / 384 / 512 | | | | | | |
 | 4 | | Context prefix on/off | | | | | | |
 | 5 | | RRF vs weighted fusion | | | | | | |
@@ -30,6 +30,13 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 - That first run had 1 error (accuracy 0.414, MRR 0.119) caused by infrastructure, not retrieval, so it is not the counted result: (1) a Groq tokens-per-minute 429 ("try again in 15.7s") outlasted the 2 s / 4 s backoff. The 429 limit is per Groq organization, so rotating the 3 keys cannot help; fixed by honoring the provider's wait hint (commit `d2091bd`). (2) The faithfulness judge's JSON was cut off at `max_output_tokens` (reasoning tokens share that budget) and the broken reply had been cached; fixed by treating truncated output as an error that is never cached, with a 4096-token budget for the faithfulness judge only (commit `5ebca16`, no extra LLM calls). A scan of the cache found no truncated answers in either run.
 - Recall@5 improved only slightly while accuracy more than doubled: most correct answers now come from filtered results whose gold page is not in the top 5 (the filter removes distractor filings; the right page is often still ranked lower). Page-level recall understates answerability; see the failure analysis after experiments 1-4.
 - The router found the year for only about half of the dev questions (15/29), so for the rest it filters by company only.
+
+### Experiment 2 notes (rerank ON, on top of experiment 1)
+
+- Change: `rerank.enabled: false -> true` (commit `a51c932`, reverted). Counted run, zero errors: `data/eval/runs/20261110T064102_dev.json`, n=29, 29 uncached questions.
+- Vs experiment 1 (the config in force before this change): recall@5 0.207 -> 0.172 (6/29 -> 5/29), MRR 0.124 -> 0.099, accuracy 0.448 -> 0.310 (13/29 -> 9/29), "I don't know" answers 12 -> 16. Faithfulness 0.900 -> 0.905 is over different answered sets (n=17 vs n=13), so it is not comparable. Per question: accuracy gained 1 and lost 5; recall gained 1 and lost 2. Decision: revert (both recall@5 and accuracy got worse).
+- Cost: rerank stage p50 about 1.2 s on CPU; end-to-end p50 2455 ms. The p95 of 15467 ms came from Groq rate-limit waits in the LLM stage on 2 questions, not from reranking.
+- Hypothesis (not tested): the general-purpose passage cross-encoder (`Xenova/ms-marco-MiniLM-L-6-v2`) scores table-heavy financial chunks poorly (it truncates long inputs and favors prose that mirrors the question's words), so it pushes numeric tables down. If this is revisited, try a different reranker model as a separate experiment; do not stack it on other changes.
 
 ## Final (test split, run once)
 
