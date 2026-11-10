@@ -1,0 +1,283 @@
+{
+  "summary": {
+    "split": "dev",
+    "limit": 5,
+    "n": 5,
+    "completed": 5,
+    "stopped_early": false,
+    "errors": 0,
+    "idk": 1,
+    "recall_at_5": 0.4,
+    "mrr": 0.15818181818181817,
+    "accuracy": 0.6,
+    "faithfulness": 0.875,
+    "faithfulness_n": 4,
+    "latency_n": 5,
+    "latency_p50_ms": 17086.37330000056,
+    "latency_p95_ms": 27288.31859998172,
+    "stage_p50_ms": {
+      "total": 17086.37330000056,
+      "retrieve": 40.33809999236837,
+      "rerank": 0.0,
+      "llm": 17012.23450002726
+    },
+    "served_by": {
+      "gemini": 1,
+      "groq": 12
+    },
+    "generation_source": {
+      "gemini": 1,
+      "groq": 4
+    },
+    "config": {
+      "router": false,
+      "rerank": false,
+      "top_k": 20,
+      "top_n": 5,
+      "child_tokens": 256,
+      "context_prefix": true,
+      "embedding_model": "BAAI/bge-small-en-v1.5",
+      "primary": "gemini-3.1-flash-lite",
+      "fallback": "openai/gpt-oss-120b"
+    },
+    "run_file": "data\\eval\\runs\\20261110T060357_dev_limit5.json"
+  },
+  "questions": [
+    {
+      "id": "financebench_id_00215",
+      "question": "Is Verizon a capital intensive business based on FY 2022 data?",
+      "gold_answer": "Yes. Verizon's capital intensity ratio was approximately 2.774729. This means that it took approximately $2.77 of assets to generate $1 of revenue and thus, Verizon can be considered capital intensive.",
+      "doc_id": "VERIZON_2022_10K",
+      "gold_pages": [
+        23,
+        56
+      ],
+      "answer": "Yes, Verizon is a capital-intensive business based on FY 2022 data. During the year ended December 31, 2022, the company invested $23.1 billion in capital expenditures [VERIZON_2022_10K p.23].",
+      "citations": [
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 23
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 36
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 38
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 11
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 12
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 23
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 79.89829999860376,
+        "rerank": 0.0,
+        "llm": 27208.338500000536,
+        "total": 27288.31859998172
+      },
+      "generation_source": "gemini",
+      "recall": 1.0,
+      "mrr": 0.2,
+      "correct": true,
+      "faithfulness": 0.5
+    },
+    {
+      "id": "financebench_id_00438",
+      "question": "Does Adobe have an improving operating margin profile as of FY2022? If operating margin is not a useful metric for a company like this, then state that and explain why.",
+      "gold_answer": "No the operating margins of Adobe have recently declined from 36.8% in FY 2021 to 34.6% in FY2022. A drop by 2.2% in a year.",
+      "doc_id": "ADOBE_2022_10K",
+      "gold_pages": [
+        54
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "ADOBE_2016_10K",
+          "page": 99
+        },
+        {
+          "doc_id": "ADOBE_2016_10K",
+          "page": 49
+        },
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 27
+        },
+        {
+          "doc_id": "ADOBE_2015_10K",
+          "page": 20
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 28
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 40.33809999236837,
+        "rerank": 0.0,
+        "llm": 16627.98729998758,
+        "total": 16668.36880001938
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_00464",
+      "question": "Is Boeing's business subject to cyclicality?",
+      "gold_answer": "Yes, Boeing's business is subject to cyclicality due to its exposure to the airline industry which is a cyclical industry.",
+      "doc_id": "BOEING_2022_10K",
+      "gold_pages": [
+        8
+      ],
+      "answer": "Yes. Boeing\u2019s business is subject to cyclicality. The filing notes that its operating cycle is long\u2011term and that \u201cperiod\u2011to\u2011period comparisons of backlog are not necessarily indicative of future workloads\u201d and that results \u201cmay not be indicative of future operating results\u201d\u3010BOEING_2018_10K p.33\u3011. It also states that \u201cfluctuate significantly from period to period\u201d and that changes in escalation amounts can \u201csignificantly impact revenues and operating margins\u201d\u3010BOEING_2018_10K p.8\u3011. These passages indicate that Boeing\u2019s results can vary from period to period, reflecting cyclicality in its business.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 32
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 12
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 33
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 13
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 8
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 32.64079999644309,
+        "rerank": 0.0,
+        "llm": 19545.690099999774,
+        "total": 19578.40480003506
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.09090909090909091,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_00563",
+      "question": "From FY21 to FY22, excluding Embedded, in which AMD reporting segment did sales proportionally increase the most?",
+      "gold_answer": "Data Center",
+      "doc_id": "AMD_2022_10K",
+      "gold_pages": [
+        48
+      ],
+      "answer": "The segment with the largest proportional sales increase (excluding Embedded) was the **Data\u202fCenter** segment, whose revenue grew about **64\u202f%** from FY\u202f2021 to FY\u202f2022, compared with a 21\u202f% rise in Gaming and a 10\u202f% decline in Client\u202f[AMD_2022_10K p.43].",
+      "citations": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 43
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 43
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 75
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 67
+        },
+        {
+          "doc_id": "AMD_2015_10K",
+          "page": 205
+        },
+        {
+          "doc_id": "BESTBUY_2017_10K",
+          "page": 38
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 43.02179999649525,
+        "rerank": 0.0,
+        "llm": 17012.23450002726,
+        "total": 17086.37330000056
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_00566",
+      "question": "Has Verizon increased its debt on balance sheet between 2022 and the 2021 fiscal period?",
+      "gold_answer": "No. Verizon's debt decreased by $229 million.",
+      "doc_id": "VERIZON_2022_10K",
+      "gold_pages": [
+        77
+      ],
+      "answer": "Yes.\u202fAccording to Verizon\u2019s 2022 Form\u202f10\u2011K, both the short\u2011term and long\u2011term debt balances reported on the balance sheet are higher than they were in the 2021 fiscal period.  \n\n- Debt maturing within one year rose from **$400\u202fmillion** in 2021 to **$565\u202fmillion** in 2022.  \n- Long\u2011term debt increased from **$925\u202fmillion** in 2021 to **$1,167\u202fmillion** in 2022.  \n- Consequently, total finance\u2011lease liabilities grew from **$1,325\u202fmillion** in 2021 to **$1,732\u202fmillion** in 2022.  \n\nThese increases show that Verizon\u2019s balance\u2011sheet debt was higher in 2022 than in the 2021 fiscal period.  \n\n**Source:** [VERIZON_2022_10K p.75] showing the debt figures for 2022 versus 2021.",
+      "citations": [
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 75
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 38
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 77
+        },
+        {
+          "doc_id": "BESTBUY_2023_10K",
+          "page": 31
+        },
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 76
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 75
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 38.51919999578968,
+        "rerank": 0.0,
+        "llm": 14523.858600005042,
+        "total": 14562.470900011249
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.5,
+      "correct": false,
+      "faithfulness": 1.0
+    }
+  ]
+}

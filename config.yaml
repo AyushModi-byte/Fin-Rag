@@ -2,8 +2,8 @@ index: {version: v1, dir: .cache/index, collection: finrag_chunks}
 lexical: {stopwords: en}
 embeddings: {model: BAAI/bge-small-en-v1.5, batch_size: 32}
 chunking: {child_tokens: 256, overlap_tokens: 32, context_prefix: true}
-retrieval: {top_k: 20, rrf_k: 60, use_router_filter: true}
-rerank: {enabled: true, model: Xenova/ms-marco-MiniLM-L-6-v2, top_n: 5}
+retrieval: {top_k: 20, rrf_k: 60, use_router_filter: false}  # baseline: router OFF (Task 9 turns it on)
+rerank: {enabled: false, model: Xenova/ms-marco-MiniLM-L-6-v2, top_n: 5}
 llm:
   primary: {provider: gemini, model: gemini-3.1-flash-lite, rpm: 10, daily_budget: 200, api_key_env: GEMINI_API_KEY}
   fallback: {provider: groq, model: openai/gpt-oss-120b, rpm: 25, daily_budget: 1000, api_key_env: GROQ_API_KEY}
@@ -19,7 +19,7 @@ llm:
   budget_warn_ratio: 0.8  # stop and tell the user at 80% of a daily budget
 cache: {enabled: true, threshold: 0.95}
 acl: {default: "*", users: {}}
-eval: {dev_ratio: 0.5, seed: 42, n_companies: 10, min_questions: 50}
+eval: {dev_ratio: 0.5, seed: 42, n_companies: 10, min_questions: 50, recall_k: 5, runs_dir: data/eval/runs}
 data:
   questions_url: https://raw.githubusercontent.com/patronus-ai/financebench/main/data/financebench_open_source.jsonl
   pdf_url: https://raw.githubusercontent.com/patronus-ai/financebench/main/pdfs/{doc_id}.pdf
