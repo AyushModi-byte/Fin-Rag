@@ -4,6 +4,8 @@ Loaded from the model files fastembed already downloaded (`tokenizer.json`), wit
 ONNX session. Truncation and padding are switched off so `count` reports the true length
 (special tokens included, as the embedder adds them).
 """
+import hashlib
+
 from fastembed import TextEmbedding
 from fastembed.common.preprocessor_utils import load_tokenizer
 
@@ -12,10 +14,17 @@ class EmbedTokenizer:
     def __init__(self, model_id: str):
         self.model_id = model_id
         model = TextEmbedding(model_name=model_id, lazy_load=True)
-        tokenizer, _ = load_tokenizer(model.model._model_dir)
+        model_dir = model.model._model_dir
+        self._sha1 = hashlib.sha1((model_dir / "tokenizer.json").read_bytes()).hexdigest()
+        tokenizer, _ = load_tokenizer(model_dir)
         tokenizer.no_truncation()
         tokenizer.no_padding()
         self._tok = tokenizer
+
+    def info(self) -> dict:
+        """Recorded in the index manifest."""
+        return {"model": self.model_id, "tokenizer_json_sha1": self._sha1,
+                "special_overhead": self.special_overhead}
 
     def count(self, text: str) -> int:
         return len(self._tok.encode(text).ids)

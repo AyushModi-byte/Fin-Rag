@@ -1,6 +1,7 @@
-index: {version: v1, dir: .cache/index, collection: finrag_chunks}
+index: {version: v1, dir: .cache/index, collection: finrag_chunks, shard_size: 500, protected_versions: [v1]}
+reindex: {max_hours: 2.0, probe_chunks: 60}
 lexical: {stopwords: en, tokenizer: v2, stem: true}
-embeddings: {model: BAAI/bge-small-en-v1.5, batch_size: 1, sort_by_length: true, threads: null}
+embeddings: {model: BAAI/bge-small-en-v1.5, batch_size: 1, sort_by_length: true, threads: null, query_prefix: "", doc_prefix: ""}
 chunking: {child_tokens: 300, overlap_tokens: 40, max_embed_tokens: 480, min_tokens: 15, max_header_rows: 3, max_heading_chars: 80, context_prefix: true}
 retrieval: {top_k: 20, rrf_k: 60, use_router_filter: true, min_chunk_tokens: 15}
 rerank: {enabled: false, model: Xenova/ms-marco-MiniLM-L-6-v2, top_n: 5}
