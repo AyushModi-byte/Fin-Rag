@@ -68,13 +68,14 @@ def _parse_claims(reply: str) -> list[dict]:
     return claims
 
 
-def judge_faithful(answer: str, contexts: list[str], llm) -> float | None:
+def judge_faithful(answer: str, contexts: list[str], llm, max_output_tokens: int | None = None) -> float | None:
     """supported_claims / total_claims, from one LLM call. None when there is nothing to judge
     (I don't know, no contexts, or no claims)."""
     if _is_idk(answer) or not contexts:
         return None
+    extra = {"max_output_tokens": max_output_tokens} if max_output_tokens else {}
     claims = _parse_claims(
-        llm.complete(build_judge_faithful_prompt(answer, contexts), system=JUDGE_FAITHFUL_SYSTEM)
+        llm.complete(build_judge_faithful_prompt(answer, contexts), system=JUDGE_FAITHFUL_SYSTEM, **extra)
     )
     if not claims:
         return None
@@ -201,7 +202,9 @@ def run_eval(split: str, limit: int | None = None, cfg=None, pipeline=None, llm=
                     recall=recall_at_k(out.ranked, row["gold_pages"], k, row["doc_id"]),
                     mrr=mrr(out.ranked, row["gold_pages"], row["doc_id"]),
                     correct=judge_correct(row["question"], row["gold_answer"], result.answer, llm),
-                    faithfulness=judge_faithful(result.answer, result.contexts, llm),
+                    faithfulness=judge_faithful(
+                        result.answer, result.contexts, llm, cfg.eval.judge_max_output_tokens
+                    ),
                 )
             except BudgetNearlyExhausted:
                 stopped_early = True

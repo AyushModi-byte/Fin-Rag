@@ -103,12 +103,12 @@ class _Provider:
     key_envs: list[str]
 
 
-def _gemini_request(url_tpl, p, key, prompt, system, cfg):
+def _gemini_request(url_tpl, p, key, prompt, system, cfg, max_tokens):
     payload = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": cfg.llm.temperature,
-            "maxOutputTokens": cfg.llm.max_output_tokens,
+            "maxOutputTokens": max_tokens,
         },
     }
     if system:
@@ -116,15 +116,18 @@ def _gemini_request(url_tpl, p, key, prompt, system, cfg):
     return url_tpl.format(model=p.model), {"x-goog-api-key": key}, payload
 
 
-def _gemini_parse(body: dict) -> str:
+def _gemini_parse(body: dict) -> tuple[str, bool]:
+    """(text, truncated): truncated means the reply was cut off at the output-token limit."""
     try:
-        parts = body["candidates"][0]["content"]["parts"]
+        candidate = body["candidates"][0]
+        parts = candidate["content"]["parts"]
     except (KeyError, IndexError, TypeError):
-        return ""
-    return "".join(part.get("text", "") for part in parts if isinstance(part, dict))
+        return "", False
+    text = "".join(part.get("text", "") for part in parts if isinstance(part, dict))
+    return text, candidate.get("finishReason") == "MAX_TOKENS"
 
 
-def _groq_request(url_tpl, p, key, prompt, system, cfg):
+def _groq_request(url_tpl, p, key, prompt, system, cfg, max_tokens):
     messages = ([{"role": "system", "content": system}] if system else []) + [
         {"role": "user", "content": prompt}
     ]
@@ -132,16 +135,17 @@ def _groq_request(url_tpl, p, key, prompt, system, cfg):
         "model": p.model,
         "messages": messages,
         "temperature": cfg.llm.temperature,
-        "max_tokens": cfg.llm.max_output_tokens,
+        "max_tokens": max_tokens,
     }
     return url_tpl, {"Authorization": f"Bearer {key}"}, payload
 
 
-def _groq_parse(body: dict) -> str:
+def _groq_parse(body: dict) -> tuple[str, bool]:
     try:
-        return body["choices"][0]["message"]["content"] or ""
+        choice = body["choices"][0]
+        return choice["message"]["content"] or "", choice.get("finish_reason") == "length"
     except (KeyError, IndexError, TypeError):
-        return ""
+        return "", False
 
 
 _ADAPTERS = {
@@ -185,8 +189,15 @@ class LLMClient:
 
     # ---- public ----
 
-    def complete(self, prompt: str, system: str | None = None, only: str | None = None) -> str:
-        """Answer a prompt. `only` restricts to one provider by name (e.g. "groq")."""
+    def complete(
+        self,
+        prompt: str,
+        system: str | None = None,
+        only: str | None = None,
+        max_output_tokens: int | None = None,
+    ) -> str:
+        """Answer a prompt. `only` restricts to one provider by name (e.g. "groq").
+        `max_output_tokens` overrides llm.max_output_tokens for this call (long structured output)."""
         providers = [p for p in self.providers if only in (None, p.name)]
         if not providers:
             raise LLMError(f"unknown provider {only!r}")
@@ -203,7 +214,9 @@ class LLMClient:
                 failures.append(f"{p.name}: {' / '.join(p.key_envs)} is not set")
                 continue
             try:
-                text = self._call_with_retries(p, prompt, system)
+                text = self._call_with_retries(
+                    p, prompt, system, max_output_tokens or self.cfg.llm.max_output_tokens
+                )
             except _ProviderFailed as e:
                 failures.append(f"{p.name}: {e}")
                 if i + 1 < len(providers):
@@ -257,7 +270,7 @@ class LLMClient:
 
     # ---- one provider ----
 
-    def _call_with_retries(self, p: _Provider, prompt: str, system: str | None) -> str:
+    def _call_with_retries(self, p: _Provider, prompt: str, system: str | None, max_tokens: int) -> str:
         build, parse = _ADAPTERS[p.name]
         url_tpl = self.cfg.llm.endpoints.__dict__[p.name]
         max_attempts = 1 + self.cfg.llm.max_retries
@@ -266,7 +279,7 @@ class LLMClient:
         while attempts < max_attempts:
             hint = None
             env = self._pick_key(p)
-            url, headers, payload = build(url_tpl, p, self._key_value(env), prompt, system, self.cfg)
+            url, headers, payload = build(url_tpl, p, self._key_value(env), prompt, system, self.cfg, max_tokens)
             self._throttle(env, p.rpm)
             self._count_call(p, env)
             logger.debug(
@@ -278,9 +291,13 @@ class LLMClient:
                 reason = type(e).__name__
             else:
                 if resp.status == 200:
-                    text = parse(resp.body).strip()
-                    if text:
-                        return text
+                    text, truncated = parse(resp.body)
+                    if truncated:  # never cache or return a half-finished reply
+                        raise _ProviderFailed(
+                            f"output truncated at {max_tokens} tokens (raise the output-token limit)"
+                        )
+                    if text.strip():
+                        return text.strip()
                     raise _ProviderFailed("empty response")
                 reason = f"HTTP {resp.status}" + self._error_detail(resp.body)
                 if resp.status == 429:

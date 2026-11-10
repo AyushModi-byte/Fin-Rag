@@ -148,10 +148,12 @@ class JudgeLLM:
 
     def __init__(self):
         self.calls = []
+        self.kwargs = []
         self.last_call = SimpleNamespace(provider="gemini", model="m", cached=False)
 
     def complete(self, prompt, system=None, **kwargs):
         self.calls.append(prompt)
+        self.kwargs.append(kwargs)
         if "claims" in (system or "").lower() or "claim" in prompt.lower() and "supported" in prompt.lower():
             return '{"claims": [{"claim": "x", "supported": true}, {"claim": "y", "supported": false}]}'
         return "CORRECT" if "RIGHT" in prompt else "INCORRECT"
@@ -231,3 +233,13 @@ def test_run_eval_budget_stop_saves_partial_and_reraises(tmp_path):
         run_eval("dev", cfg=cfg, pipeline=pipe, llm=JudgeLLM())
     saved = [json.loads(p.read_text(encoding="utf-8")) for p in (tmp_path / "runs").glob("*.json")]
     assert len(saved) == 1 and saved[0]["summary"]["completed"] == 1 and saved[0]["summary"]["stopped_early"]
+
+
+def test_run_eval_gives_the_faithfulness_judge_the_configured_output_budget(tmp_path):
+    cfg = eval_cfg(tmp_path, [row(1)])
+    ranked = {"question 1": [make_hit("a")]}
+    pipe = StubPipeline({"question 1": "RIGHT"}, ranked)
+    llm = JudgeLLM()
+    run_eval("dev", cfg=cfg, pipeline=pipe, llm=llm)
+    assert {"max_output_tokens": cfg.eval.judge_max_output_tokens} in llm.kwargs
+    assert len([k for k in llm.kwargs if k]) == 1  # only the faithfulness call gets the override

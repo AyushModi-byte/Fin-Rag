@@ -526,3 +526,53 @@ def test_short_hint_never_shortens_the_exponential_backoff(cfg, tm):
     t = FakeTransport(gemini=[rate_limit_429("0.1"), gemini_ok()])
     make_client(cfg, tm, t).complete("question")
     assert tm.sleeps == [cfg.llm.backoff_base_s]
+
+
+# ---------------- truncated output / per-call token budget ----------------
+
+def groq_truncated(text="partial {"):
+    return HttpResponse(200, {"choices": [{"message": {"content": text}, "finish_reason": "length"}]})
+
+
+def gemini_truncated(text="partial {"):
+    return HttpResponse(200, {"candidates": [{"content": {"parts": [{"text": text}]}, "finishReason": "MAX_TOKENS"}]})
+
+
+def test_truncated_groq_reply_is_an_error_and_is_not_cached(cfg, tm):
+    t = FakeTransport(groq=[groq_truncated(), groq_ok("complete answer")])
+    client = make_client(cfg, tm, t)
+    with pytest.raises(LLMError) as exc:
+        client.complete("question", only="groq")
+    assert "truncated" in str(exc.value)
+    assert client.complete("question", only="groq") == "complete answer"  # not served from cache
+    assert t.count("groq.com") == 2
+
+
+def test_truncated_gemini_reply_is_an_error_and_is_not_cached(cfg, tm):
+    t = FakeTransport(gemini=[gemini_truncated(), gemini_ok("complete answer")])
+    client = make_client(cfg, tm, t)
+    with pytest.raises(LLMError):
+        client.complete("question", only="gemini")
+    assert client.complete("question", only="gemini") == "complete answer"
+
+
+def test_truncated_reply_is_not_retried_with_the_same_budget(cfg, tm):
+    t = FakeTransport(groq=[groq_truncated()])
+    with pytest.raises(LLMError):
+        make_client(cfg, tm, t).complete("question", only="groq")
+    assert t.count("groq.com") == 1 and tm.sleeps == []
+
+
+def test_per_call_max_output_tokens_reaches_both_payloads(cfg, tm):
+    t = FakeTransport(gemini=[gemini_ok()], groq=[groq_ok()])
+    client = make_client(cfg, tm, t)
+    client.complete("p1", only="gemini", max_output_tokens=4096)
+    client.complete("p2", only="groq", max_output_tokens=4096)
+    assert t.calls[0]["payload"]["generationConfig"]["maxOutputTokens"] == 4096
+    assert t.calls[1]["payload"]["max_tokens"] == 4096
+
+
+def test_default_max_output_tokens_comes_from_config(cfg, tm):
+    t = FakeTransport(groq=[groq_ok()])
+    make_client(cfg, tm, t).complete("p", only="groq")
+    assert t.calls[0]["payload"]["max_tokens"] == cfg.llm.max_output_tokens

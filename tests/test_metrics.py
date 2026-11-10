@@ -54,7 +54,7 @@ class FakeLLM:
         self.reply, self.calls = reply, []
 
     def complete(self, prompt, system=None, **kwargs):
-        self.calls.append({"prompt": prompt, "system": system})
+        self.calls.append({"prompt": prompt, "system": system, "kwargs": kwargs})
         return self.reply
 
 
@@ -105,3 +105,13 @@ def test_judge_faithful_none_when_nothing_to_judge():
 def test_judge_faithful_unparseable_reply_raises_not_guesses():
     with pytest.raises(ValueError):
         judge_faithful("answer", ["ctx"], FakeLLM("sorry, I cannot do that"))
+
+
+def test_judge_faithful_passes_output_budget_only_when_given():
+    ok = '{"claims": [{"claim": "a", "supported": true}]}'
+    llm = FakeLLM(ok)
+    judge_faithful("ans", ["ctx"], llm, max_output_tokens=4096)
+    assert llm.calls[0]["kwargs"] == {"max_output_tokens": 4096}
+    llm2 = FakeLLM(ok)
+    judge_faithful("ans", ["ctx"], llm2)
+    assert llm2.calls[0]["kwargs"] == {}
