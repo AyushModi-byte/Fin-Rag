@@ -180,3 +180,41 @@ def test_route_multiple_companies_in_scope_without_company_filter():
 def test_route_keeps_query_text():
     q = "3M FY2018 capex"
     assert route(q, KNOWN).query == q
+
+
+# ---- tiny-chunk filter (retrieval.min_chunk_tokens) ----
+
+def _retriever_with(min_tokens, dense, lexical):
+    cfg = load_config()
+    cfg.retrieval.min_chunk_tokens = min_tokens
+    return HybridRetriever(FakeStore(dense), FakeBM25(lexical), FakeEmbedder(), cfg)
+
+
+def test_tiny_chunks_are_dropped_when_min_chunk_tokens_is_set():
+    tiny = make_hit("tiny", text="21")
+    real1 = make_hit("real1", text="Net cash provided by operating activities was $3.1 billion in 2022, driven by higher net income and favorable working capital changes.")
+    real2 = make_hit("real2", text="Customer concentration: one customer accounted for 16% of consolidated net revenue in 2022, compared with 14% in the prior year.")
+    r = _retriever_with(15, dense=[tiny, real1], lexical=[real2, tiny])
+    ids = [h.chunk_id for h in r.retrieve("q", k=5)]
+    assert "tiny" not in ids
+    assert set(ids) == {"real1", "real2"}
+
+
+def test_dropping_tiny_chunks_moves_real_chunks_up():
+    tiny = make_hit("tiny", text="ii")
+    real = make_hit("real", text="Operating income increased to $9.0 billion for the fiscal year, reflecting higher volumes, pricing actions and lower restructuring charges.")
+    r = _retriever_with(15, dense=[tiny, real], lexical=[])
+    assert [h.chunk_id for h in r.retrieve("q", k=5)] == ["real"]
+
+
+def test_min_chunk_tokens_zero_keeps_everything():
+    tiny = make_hit("tiny", text="21")
+    real = make_hit("real", text="Operating income increased to $9.0 billion for the fiscal year, reflecting higher volumes, pricing actions and lower restructuring charges.")
+    r = _retriever_with(0, dense=[tiny, real], lexical=[])
+    assert {h.chunk_id for h in r.retrieve("q", k=5)} == {"tiny", "real"}
+
+
+def test_tables_are_never_treated_as_tiny():
+    table = make_hit("table", text="|Segment|2018|2017|\n|---|---|---|\n|Safety|3,000|2,900|\n|Health|2,500|2,400|")
+    r = _retriever_with(15, dense=[table], lexical=[])
+    assert [h.chunk_id for h in r.retrieve("q", k=5)] == ["table"]

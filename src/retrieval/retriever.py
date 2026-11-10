@@ -1,3 +1,4 @@
+from src.chunking.chunker import count_tokens
 from src.schemas.models import Hit
 
 
@@ -26,9 +27,17 @@ class HybridRetriever:
         self.bm25 = bm25
         self.embedder = embedder
         self.rrf_k: int = cfg.retrieval.rrf_k
+        self.min_chunk_tokens: int = cfg.retrieval.min_chunk_tokens  # 0 = keep every chunk
 
     def retrieve(self, q: str, k: int, filters: dict | None = None) -> list[Hit]:
         vec = self.embedder.embed([q])[0]
-        dense = self.store.search(vec, k, filters)
-        lexical = self.bm25.search(q, k, filters)
+        dense = self._drop_tiny(self.store.search(vec, k, filters))
+        lexical = self._drop_tiny(self.bm25.search(q, k, filters))
         return rrf([dense, lexical], k=self.rrf_k)[:k]
+
+    def _drop_tiny(self, hits: list[Hit]) -> list[Hit]:
+        """Page-number and header fragments match any company/year query through the context
+        prefix; drop chunks with fewer than min_chunk_tokens tokens before fusing."""
+        if self.min_chunk_tokens <= 0:
+            return hits
+        return [h for h in hits if count_tokens(h.chunk.text) >= self.min_chunk_tokens]
