@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src.config import load_config
+from src.generation.context_expansion import expand_context
 from src.generation.grounded_answer import generate
 from src.query.query_router import route
 from src.schemas.models import Hit, QueryResult
@@ -25,8 +26,9 @@ def _ms(start: float) -> float:
 
 
 class QueryPipeline:
-    def __init__(self, cfg, retriever, reranker, llm, known_companies: list[str], closers=()):
+    def __init__(self, cfg, retriever, reranker, llm, known_companies: list[str], closers=(), parents=None):
         self.cfg = cfg
+        self.parents = parents or {}  # table/page parents by id, for generation.expand_tables
         self.retriever = retriever
         self.reranker = reranker
         self.llm = llm
@@ -57,6 +59,8 @@ class QueryPipeline:
             rerank_ms = _ms(t)
 
         context = ranked[: self.cfg.rerank.top_n]
+        if self.cfg.generation.expand_tables:
+            context = expand_context(context, self.parents, self.cfg.generation.max_context_tokens)
         result = generate(q, context, self.llm)
         result.latency_ms = {
             "retrieve": retrieve_ms,
@@ -75,7 +79,7 @@ def build_pipeline(cfg=None) -> QueryPipeline:
     """Assemble the real pipeline from the on-disk index. Heavy: loads models."""
     from src.embeddings.embedder import Embedder
     from src.llm.llm_client import LLMClient
-    from src.pipelines.index_pipeline import load_index
+    from src.pipelines.index_pipeline import load_index, load_parents
     from src.rerank.reranker import Reranker
     from src.retrieval.retriever import HybridRetriever
 
@@ -85,7 +89,8 @@ def build_pipeline(cfg=None) -> QueryPipeline:
     reranker = Reranker(cfg) if cfg.rerank.enabled else None
     docs = json.loads((Path(cfg.data.eval_dir) / "docs.json").read_text(encoding="utf-8"))
     known = sorted({d["company"] for d in docs.values()})
-    return QueryPipeline(cfg, retriever, reranker, LLMClient(cfg), known, closers=[store.close])
+    parents = load_parents(cfg) if cfg.generation.expand_tables else None
+    return QueryPipeline(cfg, retriever, reranker, LLMClient(cfg), known, closers=[store.close], parents=parents)
 
 
 _default: QueryPipeline | None = None
