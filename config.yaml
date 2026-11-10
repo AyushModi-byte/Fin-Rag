@@ -6,7 +6,11 @@ chunking: {child_tokens: 300, overlap_tokens: 40, max_embed_tokens: 480, min_tok
 retrieval: {top_k: 20, rrf_k: 60, dense_weight: 1.0, bm25_weight: 0.25, use_router_filter: true, min_chunk_tokens: 15}
 rerank: {enabled: false, model: Xenova/ms-marco-MiniLM-L-6-v2, top_n: 5}
 llm:
-  primary: {provider: groq, model: openai/gpt-oss-120b, rpm: 25, daily_budget: 1000, api_key_envs: [GROQ_API_KEY_1, GROQ_API_KEY_2, GROQ_API_KEY_3]}
+  # Groq gpt-oss-120b (console.groq.com/docs/rate-limits, checked 2026-11-10): 30 RPM, 1,000 requests/day,
+  # 8,000 tokens/min, 200,000 tokens/day, applied per ORGANIZATION, not per key. daily_budget is counted per
+  # key, so 333 x 3 keys = the 1,000/day total, assuming the 3 keys share one org (raise to 1000 if they are
+  # in separate orgs). Tokens per day are NOT tracked by LLMClient: a 429 citing TPD means stop for the day.
+  primary: {provider: groq, model: openai/gpt-oss-120b, rpm: 25, daily_budget: 333, api_key_envs: [GROQ_API_KEY_1, GROQ_API_KEY_2, GROQ_API_KEY_3]}
   fallback: null          # Gemini removed (persistent 503s); a 2nd provider can be added here later
   endpoints:
     gemini: "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
