@@ -14,6 +14,7 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 | 7 | | Numeric-reasoning prompt | | | | | | |
 | 8 | 2026-11-10 | Router year parsing: FY22 two-digit years + latest year when several are named (from the failure analysis; on top of exp 1) | 0.310 | 0.153 | 0.517 | 0.904 (n=19) | 2002 ms | keep |
 | 9 | 2026-11-10 | Drop chunks under 15 tokens at retrieval (`retrieval.min_chunk_tokens: 0 -> 15`; from the failure analysis; on top of exp 8) | 0.345 | 0.196 | 0.517 | 0.909 (n=19) | 1672 ms | keep |
+| 10 | 2026-11-10 | **Index v2** (one re-index): chunker v2 (embedder-tokenizer sizing, table row groups, rich prefix), mxbai-embed-large-v1, BM25 v2 (stemming), `index.version: v2`; router + min_chunk_tokens 15, rerank off | 0.517 | 0.411 | 0.552 | 0.908 (n=21) | 2553 ms | keep |
 
 ### Baseline notes (row 0)
 
@@ -54,6 +55,15 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 - Honest size of the effect: recall@5 moved by one question (00757, the AMD customer-concentration question that had page-number chunks in its top 3), so on n=29 this is a small gain; the MRR change (+0.043) is the stronger signal that real pages moved up. The accuracy swap (+1/-1) is within run-to-run noise of the answerer; 00790 had a different context set this time.
 - Latency 1672 ms p50 / 3036 ms p95 is over only the 8 uncached questions (the rest reused cached answers), so it is indicative only.
 
+### Experiment 10 notes (index v2)
+
+- Change: everything index-time in one re-index (commits `36de644`, `6e9f4af`, `83f51b4`, `4a6e043`): chunker v2, `mixedbread-ai/mxbai-embed-large-v1` (1024-d, no query/doc prefix), child 300 / overlap 40 / cap 480, BM25 v2. Query-time settings unchanged from experiment 9 (router, min_chunk_tokens 15, rerank off, top_k 20, top_n 5). Counted run, zero errors: `data/eval/runs/20261110T133621_dev.json`, n=29. v1 is untouched (`index.version: v1` with `config.v1.yaml` rolls back).
+- **Offline retrieval first** (`python -m src.jobs.compare_indexes`, no LLM calls, all 29 dev questions): recall@5 0.345 -> 0.517, MRR 0.196 -> 0.411, mean gold rank 18.8 -> 13.1, geo-mean 8.7 -> 4.5, median 7 -> 3, missing in top 100: 1 -> 0. Gold rank better on 19 questions, worse on 9, same on 1. Recall@5 gained on 7 questions (00464, 00917, 00995, 01107, 03882, 04735, 07507, 10285) and lost on 3 narrowly (00563 4 -> 7, 00566, 01279 5 -> 6). Largest regression: 00720 (18 -> 63, a miss in both; the "gross margin is not a useful metric" question).
+- **Dev eval vs experiment 9 (v1):** recall@5 0.345 -> 0.517 (10/29 -> 15/29), MRR 0.196 -> 0.411, accuracy 0.517 -> 0.552 (15/29 -> 16/29: gained 00790, 00995, 03069, 07507; lost 00720, 01226, 01279), faithfulness 0.909 (n=19) -> 0.908 (n=21), "I don't know" 10 -> 8. Decision rule (keep if recall@5 or MRR improves and accuracy is not worse by more than one question): **keep**.
+- Honest size of the effect: retrieval moved a lot (recall@5 +5 questions, MRR more than doubled) but accuracy only +1 question and +4/-3 swaps, within answerer noise. Retrieval is no longer the main limit on accuracy for the questions it now finds; the remaining misses are reasoning/answering and the lost-cause questions (00720, 01981).
+- Latency p50 2553 ms / p95 11995 ms over 24 uncached questions (p95 from Groq rate-limit waits); retrieval stage p50 about 290 ms with mxbai-large (query embedding on CPU). All LLM calls served by Groq gpt-oss-120b (`groq: 55`, cache 16).
+- Which component earned it is NOT isolated: embedder, chunking and BM25 changed together by design (one re-index). The pilot suggests most of the gain is the embedder (dense MRR 0.408 vs 0.294 for bge-small on the same v2 chunks).
+
 ## Final (test split, run once)
 
 | Recall@5 | MRR | Accuracy | Faithfulness | p50 | p95 |
@@ -90,6 +100,7 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 
 | Date | Index version | Embedding model | Docs | Chunks (dense / BM25) | Build time | Notes |
 |------|---------------|-----------------|------|------------------------|------------|-------|
+| 2026-11-10 | v2 | mixedbread-ai/mxbai-embed-large-v1 (1024-d) | 22 | 16101 / 16101 (4787 parents) | embedding 96 min wall (16:56 -> 18:32, 2.2 to 2.8 chunks/s; probe had projected 2.06 h) + about 25 min lost in a slow Qdrant upsert, aborted, + 42 s to finish from the shards | child_tokens 300, overlap 40, cap 480, min_tokens 15, BM25 v2. Gate raised 2.0 -> 2.5 h (approved). Index size 294 MB. **Lesson:** embedded Qdrant commits and fsyncs per point (1.3 points/s at 5k points on this Windows machine); fixed with `VectorStore.bulk_load()` (16k points in 7 s). This probably also explains much of v1's 11,558 s, not only the embedding. |
 | 2026-11-09 | v1 | BAAI/bge-small-en-v1.5 (384-d) | 22 | 15925 / 15925 | 11558.3 s (as reported by the job, includes embedding on CPU; parsed pages reused) | child_tokens 256, overlap 32, context prefix on. Index size 104 MB. Time is far above the ~15 min parse; wall-clock may include machine sleep, not re-measured. |
 
 ## Embedding speed (Phase 0, bge-small-en-v1.5, 300 random v1 chunks, Ryzen 7 4800H 8C/16T, no LLM calls)

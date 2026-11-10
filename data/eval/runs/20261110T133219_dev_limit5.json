@@ -1,0 +1,285 @@
+{
+  "summary": {
+    "split": "dev",
+    "limit": 5,
+    "n": 5,
+    "completed": 5,
+    "stopped_early": false,
+    "errors": 0,
+    "idk": 0,
+    "recall_at_5": 0.4,
+    "mrr": 0.3172893772893773,
+    "accuracy": 0.6,
+    "faithfulness": 0.8444444444444444,
+    "faithfulness_n": 5,
+    "latency_n": 5,
+    "latency_p50_ms": 1976.640300010331,
+    "latency_p95_ms": 3616.022799978964,
+    "stage_p50_ms": {
+      "total": 1976.640300010331,
+      "retrieve": 277.28690003277734,
+      "rerank": 0.0,
+      "llm": 1673.8927999977022
+    },
+    "served_by": {
+      "groq": 15
+    },
+    "generation_source": {
+      "groq": 5
+    },
+    "config": {
+      "router": true,
+      "rerank": false,
+      "top_k": 20,
+      "top_n": 5,
+      "child_tokens": 300,
+      "context_prefix": true,
+      "embedding_model": "mixedbread-ai/mxbai-embed-large-v1",
+      "primary": "openai/gpt-oss-120b",
+      "fallback": null
+    },
+    "run_file": "data\\eval\\runs\\20261110T133219_dev_limit5.json"
+  },
+  "questions": [
+    {
+      "id": "financebench_id_00215",
+      "question": "Is Verizon a capital intensive business based on FY 2022 data?",
+      "gold_answer": "Yes. Verizon's capital intensity ratio was approximately 2.774729. This means that it took approximately $2.77 of assets to generate $1 of revenue and thus, Verizon can be considered capital intensive.",
+      "doc_id": "VERIZON_2022_10K",
+      "gold_pages": [
+        23,
+        56
+      ],
+      "answer": "Yes.\u202fIn fiscal\u202f2022 Verizon reported\u202f$23.1\u202fbillion of capital expenditures (including about\u202f$6.2\u202fbillion for C\u2011Band\u2011related spending)\u202f\u2014\u202fa level of spending that characterizes the company as a capital\u2011intensive business\u3010VERIZON_2022_10K p.23\u3011.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 21
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 38
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 35
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 36
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 23
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 301.9143000128679,
+        "rerank": 0.0,
+        "llm": 1673.8927999977022,
+        "total": 1976.640300010331
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.2,
+      "correct": true,
+      "faithfulness": 0.6666666666666666
+    },
+    {
+      "id": "financebench_id_00438",
+      "question": "Does Adobe have an improving operating margin profile as of FY2022? If operating margin is not a useful metric for a company like this, then state that and explain why.",
+      "gold_answer": "No the operating margins of Adobe have recently declined from 36.8% in FY 2021 to 34.6% in FY2022. A drop by 2.2% in a year.",
+      "doc_id": "ADOBE_2022_10K",
+      "gold_pages": [
+        54
+      ],
+      "answer": "**Step\u2011by\u2011step calculation of Adobe\u2019s operating margin**\n\n| Fiscal year | Total revenue (millions\u202f$) | Total operating expenses (millions\u202f$) | Operating income = Revenue \u2013 Expenses (millions\u202f$) | Operating margin = Operating income \u00f7 Revenue |\n|-------------|---------------------------|----------------------------------------|------------------------------------------------------|-----------------------------------------------|\n| 2022 | $17,606\u202fmillion (Digital Media\u202f+\u202fDigital Experience\u202f+\u202fPublishing & Advertising)\u3010ADOBE_2022_10K p.65\u3011 | $9,343\u202fmillion (total operating expenses)\u3010ADOBE_2022_10K p.43\u3011 | $17,606\u202f\u2013\u202f$9,343\u202f=\u202f$8,263\u202fmillion | $8,263\u202f\u00f7\u202f$17,606\u202f=\u202f0.4695 \u2192 **46.9\u202f%** |\n| 2021 | $15,785\u202fmillion (same source)\u3010ADOBE_2022_10K p.65\u3011 | $8,118\u202fmillion (total operating expenses)\u3010ADOBE_2022_10K p.43\u3011 | $15,785\u202f\u2013\u202f$8,118\u202f=\u202f$7,667\u202fmillion | $7,667\u202f\u00f7\u202f$15,785\u202f=\u202f0.4858 \u2192 **48.6\u202f%** |\n| 2020 | $12,868\u202fmillion (same source)\u3010ADOBE_2022_10K p.65\u3011 | $6,909\u202fmillion (total operating expenses)\u3010ADOBE_2022_10K p.43\u3011 | $12,868\u202f\u2013\u202f$6,909\u202f=\u202f$5,959\u202fmillion | $5,959\u202f\u00f7\u202f$12,868\u202f=\u202f0.4629 \u2192 **46.3\u202f%** |\n\n**Interpretation**\n\n- **2020 \u2192 2021:** Operating margin rose from **46.3\u202f%** to **48.6\u202f%** (an improvement).\n- **2021 \u2192 2022:** Operating margin fell to **46.9\u202f%**, a slight decline relative to 2021, though still higher than 2020.\n\n**Conclusion**\n\nAdobe\u2019s operating margin is **not consistently improving** as of FY\u202f2022; it peaked in FY\u202f2021 and slipped modestly in FY\u202f2022. Therefore, the statement \u201cAdobe has an improving operating margin profile as of FY2022\u201d is **not supported** by the data.\n\n**Is operating margin a useful metric for Adobe?**\n\nOperating margin remains a valuable indicator for a SaaS\u2011focused technology company like Adobe because it reflects how efficiently the firm converts revenue into profit after covering core operating costs (R&D, sales & marketing, G&A). While high growth companies often reinvest heavily in R&D and sales, tracking operating margin helps investors gauge progress toward profitability and the impact of scaling. Thus, operating margin **is a useful metric** for evaluating Adobe\u2019s performance.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 43
+        },
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 33
+        },
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 45
+        },
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 23
+        },
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 65
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 297.47210000641644,
+        "rerank": 0.0,
+        "llm": 3318.356500007212,
+        "total": 3616.022799978964
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.07692307692307693,
+      "correct": false,
+      "faithfulness": 0.8888888888888888
+    },
+    {
+      "id": "financebench_id_00464",
+      "question": "Is Boeing's business subject to cyclicality?",
+      "gold_answer": "Yes, Boeing's business is subject to cyclicality due to its exposure to the airline industry which is a cyclical industry.",
+      "doc_id": "BOEING_2022_10K",
+      "gold_pages": [
+        8
+      ],
+      "answer": "Yes. Boeing\u2019s commercial aircraft business is affected by the cyclical nature of the airline industry, which has historically experienced significant profit swings and competitive pressures\u202f[BOEING_2022_10K p.8] and is described as \u201ccyclical\u201d in the 2018 filing\u202f[BOEING_2018_10K p.7].",
+      "citations": [
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 8
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 7
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 8
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 7
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 8
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 9
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 8
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 253.3028000034392,
+        "rerank": 0.0,
+        "llm": 892.9722000029869,
+        "total": 1146.4849000331014
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 1.0,
+      "correct": true,
+      "faithfulness": 0.6666666666666666
+    },
+    {
+      "id": "financebench_id_00563",
+      "question": "From FY21 to FY22, excluding Embedded, in which AMD reporting segment did sales proportionally increase the most?",
+      "gold_answer": "Data Center",
+      "doc_id": "AMD_2022_10K",
+      "gold_pages": [
+        48
+      ],
+      "answer": "**Step\u2011by\u2011step calculation (excluding the Embedded segment)**  \n\n| Segment | FY\u202f2021 net revenue (million\u202f$) | FY\u202f2022 net revenue (million\u202f$) | Absolute increase (million\u202f$) | Proportional increase |\n|---------|--------------------------------|--------------------------------|------------------------------|-----------------------|\n| Data\u202fCenter | 3,694\u202f| 6,043\u202f| 6,043\u202f\u2212\u202f3,694\u202f=\u202f2,349\u202f| 2,349\u202f\u00f7\u202f3,694\u202f=\u202f0.6356 \u2192 **63.6\u202f%** |\n| Client | 6,887\u202f| 6,201\u202f| 6,201\u202f\u2212\u202f6,887\u202f=\u202f\u2011686\u202f| \u2011686\u202f\u00f7\u202f6,887\u202f=\u202f\u20110.0996 \u2192 **\u20119.96\u202f%** (decrease) |\n| Gaming | 5,607\u202f| 6,805\u202f| 6,805\u202f\u2212\u202f5,607\u202f=\u202f1,198\u202f| 1,198\u202f\u00f7\u202f5,607\u202f=\u202f0.2137 \u2192 **21.4\u202f%** |\n\n*The FY\u202f2021 and FY\u202f2022 net\u2011revenue figures for each segment are taken from the \u201cNet revenue\u201d table in the 2022 Form\u202f10\u2011K\u202f[AMD_2022_10K p.68].*\n\n**Result**\n\nExcluding the Embedded segment, the **Data\u202fCenter** segment experienced the largest proportional sales increase from FY\u202f2021 to FY\u202f2022, with a **63.6\u202f%** rise in net revenue.",
+      "citations": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 68
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 6
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 43
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 75
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 68
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 49
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 277.28690003277734,
+        "rerank": 0.0,
+        "llm": 2219.157000014093,
+        "total": 2496.6097000287846
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.14285714285714285,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_00566",
+      "question": "Has Verizon increased its debt on balance sheet between 2022 and the 2021 fiscal period?",
+      "gold_answer": "No. Verizon's debt decreased by $229 million.",
+      "doc_id": "VERIZON_2022_10K",
+      "gold_pages": [
+        77
+      ],
+      "answer": "Yes.\u202fAccording to the supplemental balance\u2011sheet disclosures, Verizon\u2019s debt balances rose from 2021 to 2022:\n\n* **Debt maturing within one year** increased from\u202f$400\u202fmillion in 2021 to\u202f$565\u202fmillion in 2022.  \n* **Long\u2011term debt** increased from\u202f$925\u202fmillion in 2021 to\u202f$1,167\u202fmillion in 2022.  \n* **Total finance\u2011lease liabilities** (which are treated as debt for accounting purposes) grew from\u202f$1,325\u202fmillion in 2021 to\u202f$1,732\u202fmillion in 2022.\n\nThese increases show that Verizon\u2019s overall debt on the balance sheet was higher in 2022 than in the 2021 fiscal period.\u202f[VERIZON_2022_10K p.75]",
+      "citations": [
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 75
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 75
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 69
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 25
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 18
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 18
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 269.53660004073754,
+        "rerank": 0.0,
+        "llm": 1448.4009000007063,
+        "total": 1718.0911999894306
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.16666666666666666,
+      "correct": false,
+      "faithfulness": 1.0
+    }
+  ]
+}
