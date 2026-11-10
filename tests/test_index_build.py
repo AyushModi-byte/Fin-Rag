@@ -134,3 +134,25 @@ def test_parents_are_saved_and_loadable(cfg):
     m = index_chunks(chunks(4), cfg, embedder=FakeEmbedder(), parents=parents)
     assert m["parents"] == 1
     assert load_parents(cfg)["t1"].text == "|a|b|"
+
+
+def test_bulk_load_is_correct_and_searchable(tmp_path):
+    from src.vector_db.vector_store import VectorStore
+
+    cs = chunks(50)
+    vecs = FakeEmbedder().embed_documents([c.text for c in cs])
+    store = VectorStore(tmp_path / "q", "t", FakeEmbedder.dim)
+    try:
+        with store.bulk_load():
+            store.upsert(cs[:25], vecs[:25])
+            store.upsert(cs[25:], vecs[25:])
+        assert store.count() == 50
+        top = store.search(vecs[7], 1)[0]
+        assert top.chunk_id == cs[7].id
+    finally:
+        store.close()
+    again = VectorStore(tmp_path / "q", "t", FakeEmbedder.dim)  # reopened from disk
+    try:
+        assert again.count() == 50
+    finally:
+        again.close()

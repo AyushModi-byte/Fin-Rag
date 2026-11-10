@@ -1,4 +1,5 @@
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
@@ -34,6 +35,23 @@ class VectorStore:
                 collection,
                 vectors_config=models.VectorParams(size=dim, distance=models.Distance.COSINE),
             )
+
+    @contextmanager
+    def bulk_load(self):
+        """Embedded Qdrant commits (and fsyncs) once per point, which made a 16k-point build take
+        hours on Windows (measured 1.3 points/s vs 2,300 points/s without). For a bulk load, relax
+        sqlite durability; it is restored afterwards. Only for stores that are rebuilt from the
+        embedding shards anyway: a crash mid-load means rebuild, never a half-trusted index.
+        """
+        conn = self._client._client.collections[self.collection].storage.storage
+        conn.execute("PRAGMA synchronous=OFF")
+        conn.execute("PRAGMA journal_mode=MEMORY")
+        try:
+            yield
+        finally:
+            conn.commit()
+            conn.execute("PRAGMA journal_mode=DELETE")
+            conn.execute("PRAGMA synchronous=FULL")
 
     def upsert(self, chunks: list[Chunk], vectors: np.ndarray) -> None:
         points = [

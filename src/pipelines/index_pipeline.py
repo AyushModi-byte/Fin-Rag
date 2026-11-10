@@ -152,9 +152,11 @@ def index_chunks(chunks: list[Chunk], cfg, embedder: Embedder | None = None,
         shutil.rmtree(qdir)  # rebuilt from the shards; point ids are deterministic
     store = VectorStore(qdir, cfg.index.collection, embedder.dim)
     try:
-        batch = 1000
-        for lo in range(0, len(chunks), batch):
-            store.upsert(chunks[lo : lo + batch], vectors[lo : lo + batch])
+        batch = cfg.index.upsert_batch
+        with store.bulk_load():
+            for lo in range(0, len(chunks), batch):
+                store.upsert(chunks[lo : lo + batch], vectors[lo : lo + batch])
+                log.info("qdrant upsert %d/%d", min(lo + batch, len(chunks)), len(chunks))
         dense_count = store.count()
     finally:
         store.close()
