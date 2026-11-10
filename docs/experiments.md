@@ -18,6 +18,7 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 | 11 | 2026-11-10 | 5a: query instruction (`Represent this sentence for searching relevant passages: `) ON for mxbai-large (offline only, no eval spent; on top of exp 10) | 0.517 | 0.379 | n/a | n/a | n/a | not adopted (offline: MRR 0.411 -> 0.379, mean rank 13.1 -> 16.6) |
 | 12 | 2026-11-10 | 5e: weighted fusion `retrieval.bm25_weight: 1.0 -> 0.25` (dense weight 1.0; on top of exp 10) | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | 2344 ms | keep |
 | 13 | 2026-11-10 | 5c: parent expansion for generation (`generation.expand_tables: true`, `max_context_tokens: 4000`; on top of exp 12) | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | 3338 ms | not adopted (no change) |
+| 14 | 2026-11-10 | 5f: numeric-reasoning prompt `grounded_v2` (formula, units, fiscal-year check, "I don't know" only if a number is absent; `generation.prompt_version`; on top of exp 12) | 0.586 | 0.452 | 0.552 | 0.846 (n=22) | 3669 ms | revert (accuracy and faithfulness worse) |
 
 ### Baseline notes (row 0)
 
@@ -92,6 +93,14 @@ The sweep retrieves the dense and BM25 candidate lists once per dev question (sa
 - Change: each retrieved table row group is replaced by its full table parent in the LLM context (de-duplicated, capped at 4,000 regex tokens, falls back to the fragment when the table does not fit; `src/generation/context_expansion.py`). Retrieval ranking and metrics are untouched. Offline prefilter: the LLM context changes for 10 of 29 dev questions; mean context 1,128 -> 1,315 regex tokens, max 1,767 -> 3,358. Counted run, zero errors: `data/eval/runs/20261110T144247_dev.json`.
 - Result vs exp 12: recall@5 0.586 and MRR 0.452 (unchanged by design), **accuracy 0.586 (17/29), faithfulness 0.930 (n=22), "I don't know" 7: all identical**. 6 answers changed wording (00585, 01226, 02608, 03069, 04672, 07507); none changed verdict; no question gained or lost. Decision: **not adopted** (no improvement, bigger prompts, p50 3338 ms over 10 uncached questions). Code and tests stay, flag default `false`.
 - Why it probably does not help: of the 12 wrong dev answers, 8 are retrieval misses (recall 0) and expansion cannot fix those; the 3 "I don't know" answers with the gold page in the top 5 (03856, 03882, 04735) are not fixed by showing more of the same table, so the cause is reasoning/prompt, or the needed row is on a different page than the one retrieved.
+
+### Experiment 14 notes (5f numeric-reasoning prompt)
+
+- Change: `generation.prompt_version: grounded_v1 -> grounded_v2` (system prompt only; retrieval untouched; v1 kept as the default). Counted run, zero errors: `data/eval/runs/20261110T145336_dev.json`; all 29 answers regenerated (73 Groq calls); p95 74,980 ms comes from Groq rate-limit waits.
+- Result vs exp 12: recall@5 0.586 / MRR 0.452 (unchanged by design), **accuracy 0.586 -> 0.552 (17/29 -> 16/29; gained 00720, lost 00790 and 02608), faithfulness 0.930 -> 0.846 (n=22 both)**, "I don't know" 7 -> 7. Decision: **revert** (both worse).
+- It did not fix what it was written for: 03856, 03882 and 04735 (numeric questions with the gold page in the top 5) still answer "I don't know", so the numbers they need are not in the context (they are on another chunk or page); a prompt cannot supply them. 00566 (Verizon debt) is still wrong.
+- Faithfulness fell on 6 questions (00464 1.0 -> 0.5, 01091 1.0 -> 0.5, 03069, 00757, 01351, 00917) because the step-by-step answers carry more claims for the judge to check; it rose on 01009 (0.5 -> 0.86). Rolled back: `prompt_version: grounded_v1`.
+- Remaining dev failures (12 wrong at exp 12): 8 are retrieval misses (recall 0: 00438, 00585, 00720, 00799, 01009, 01226, 01279, 01981), 4 had the gold page in the top 5 (00566 wrong computation; 03856, 03882, 04735 "I don't know").
 
 ## Final (test split, run once)
 
