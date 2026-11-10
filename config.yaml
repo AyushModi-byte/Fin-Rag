@@ -5,9 +5,14 @@ chunking: {child_tokens: 256, overlap_tokens: 32, context_prefix: true}
 retrieval: {top_k: 20, rrf_k: 60, use_router_filter: true}
 rerank: {enabled: true, model: Xenova/ms-marco-MiniLM-L-6-v2, top_n: 5}
 llm:
-  primary: {provider: gemini, model: gemini-2.5-flash, rpm: 10, daily_budget: 200}
-  fallback: {provider: groq, model: llama-3.3-70b-versatile, rpm: 25, daily_budget: 1000}
+  primary: {provider: gemini, model: gemini-3.1-flash-lite, rpm: 10, daily_budget: 200, api_key_env: GEMINI_API_KEY}
+  fallback: {provider: groq, model: openai/gpt-oss-120b, rpm: 25, daily_budget: 1000, api_key_env: GROQ_API_KEY}
+  endpoints:
+    gemini: "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    groq: "https://api.groq.com/openai/v1/chat/completions"
   temperature: 0
+  max_output_tokens: 2048
+  backoff_base_s: 2.0     # retry waits: base * 2**attempt
   timeout_s: 30
   max_retries: 2          # per provider, with exponential backoff, then switch provider
   cache_dir: .cache/llm

@@ -1,0 +1,369 @@
+import json
+import logging
+from pathlib import Path
+
+import pytest
+
+from src.config import load_config
+from src.generation.grounded_answer import generate
+from src.prompts.prompt_templates import IDK
+from src.llm.llm_client import BudgetNearlyExhausted, HttpResponse, LLMClient, LLMError
+from src.schemas.models import Chunk, Hit
+
+GEM_KEY, GROQ_KEY = "gem-secret-123", "groq-secret-456"
+KEYS = {"GEMINI_API_KEY": GEM_KEY, "GROQ_API_KEY": GROQ_KEY}
+
+
+def gemini_ok(text="gemini answer"):
+    return HttpResponse(200, {"candidates": [{"content": {"parts": [{"text": text}]}}]})
+
+
+def groq_ok(text="groq answer"):
+    return HttpResponse(200, {"choices": [{"message": {"content": text}}]})
+
+
+class FakeTransport:
+    """Scripted HTTP layer. Responses are consumed per provider (matched by URL)."""
+
+    def __init__(self, gemini=(), groq=()):
+        self.script = {"generativelanguage": list(gemini), "groq.com": list(groq)}
+        self.calls = []
+
+    def __call__(self, url, headers, payload, timeout_s):
+        self.calls.append({"url": url, "headers": headers, "payload": payload, "timeout_s": timeout_s})
+        key = "generativelanguage" if "generativelanguage" in url else "groq.com"
+        queue = self.script[key]
+        if not queue:
+            raise AssertionError(f"unexpected extra call to {key}")
+        item = queue.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+    def count(self, which):
+        return sum(1 for c in self.calls if which in c["url"])
+
+
+class FakeTime:
+    def __init__(self):
+        self.now = 1000.0
+        self.sleeps = []
+
+    def clock(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+@pytest.fixture
+def cfg(tmp_path):
+    c = load_config()
+    c.llm.cache_dir = str(tmp_path / "llm")
+    c.llm.primary.rpm = 600000  # effectively no throttle unless a test sets it
+    c.llm.fallback.rpm = 600000
+    return c
+
+
+@pytest.fixture
+def tm():
+    return FakeTime()
+
+
+def make_client(cfg, tm, transport, keys=None, today="2026-11-10"):
+    return LLMClient(
+        cfg, transport=transport, api_keys=KEYS if keys is None else keys,
+        sleep=tm.sleep, clock=tm.clock, today=lambda: today,
+    )
+
+
+# ---------------- LLMClient ----------------
+
+def test_retries_on_429_then_succeeds(cfg, tm):
+    t = FakeTransport(gemini=[HttpResponse(429, {}), gemini_ok()])
+    out = make_client(cfg, tm, t).complete("question")
+    assert out == "gemini answer"
+    assert t.count("generativelanguage") == 2
+    assert t.count("groq.com") == 0
+    assert tm.sleeps == [cfg.llm.backoff_base_s]
+
+
+@pytest.mark.parametrize("failure", [HttpResponse(503, {}), TimeoutError("timed out")])
+def test_retries_on_5xx_and_timeout(cfg, tm, failure):
+    t = FakeTransport(gemini=[failure, gemini_ok()])
+    assert make_client(cfg, tm, t).complete("question") == "gemini answer"
+    assert t.count("generativelanguage") == 2
+
+
+def test_falls_back_to_groq_after_gemini_retries_exhausted(cfg, tm):
+    attempts = 1 + cfg.llm.max_retries
+    t = FakeTransport(gemini=[HttpResponse(429, {})] * attempts, groq=[groq_ok()])
+    client = make_client(cfg, tm, t)
+    assert client.complete("question") == "groq answer"
+    assert t.count("generativelanguage") == attempts
+    assert t.count("groq.com") == 1
+    base = cfg.llm.backoff_base_s
+    assert tm.sleeps == [base, base * 2]  # exponential backoff, no sleep after the last attempt
+    assert client.last_call.provider == "groq"
+    assert client.last_call.cached is False
+
+
+def test_non_retryable_status_falls_through_without_retry(cfg, tm):
+    t = FakeTransport(gemini=[HttpResponse(401, {})], groq=[groq_ok()])
+    assert make_client(cfg, tm, t).complete("question") == "groq answer"
+    assert t.count("generativelanguage") == 1
+    assert tm.sleeps == []
+
+
+def test_empty_gemini_response_falls_through(cfg, tm):
+    blocked = HttpResponse(200, {"candidates": [{"finishReason": "SAFETY"}]})
+    t = FakeTransport(gemini=[blocked], groq=[groq_ok()])
+    assert make_client(cfg, tm, t).complete("question") == "groq answer"
+    assert t.count("generativelanguage") == 1
+
+
+def test_all_providers_failing_raises_clean_error(cfg, tm):
+    attempts = 1 + cfg.llm.max_retries
+    t = FakeTransport(gemini=[HttpResponse(500, {})] * attempts, groq=[TimeoutError()] * attempts)
+    with pytest.raises(LLMError) as exc:
+        make_client(cfg, tm, t).complete("question")
+    assert GEM_KEY not in str(exc.value) and GROQ_KEY not in str(exc.value)
+    assert t.count("generativelanguage") == attempts and t.count("groq.com") == attempts
+
+
+def test_timeout_from_config_is_passed_to_transport(cfg, tm):
+    t = FakeTransport(gemini=[gemini_ok()])
+    make_client(cfg, tm, t).complete("question")
+    assert t.calls[0]["timeout_s"] == cfg.llm.timeout_s
+
+
+def test_cache_hit_makes_no_second_call(cfg, tm):
+    t = FakeTransport(gemini=[gemini_ok()])
+    client = make_client(cfg, tm, t)
+    assert client.complete("question", system="sys") == "gemini answer"
+    assert client.complete("question", system="sys") == "gemini answer"
+    assert t.count("generativelanguage") == 1
+    assert client.last_call.cached is True
+    assert client.served["cache"] == 1
+
+
+def test_cache_survives_a_new_client_and_serves_fallback_answers(cfg, tm):
+    attempts = 1 + cfg.llm.max_retries
+    t = FakeTransport(gemini=[HttpResponse(429, {})] * attempts, groq=[groq_ok()])
+    make_client(cfg, tm, t).complete("question")
+    calls_before = len(t.calls)
+    again = make_client(cfg, tm, t)  # fresh instance, same cache dir; script is empty
+    assert again.complete("question") == "groq answer"
+    assert len(t.calls) == calls_before
+
+
+def test_cache_key_includes_model(cfg, tm):
+    t = FakeTransport(gemini=[gemini_ok("first"), gemini_ok("second")])
+    assert make_client(cfg, tm, t).complete("question") == "first"
+    cfg.llm.primary.model = "another-model"
+    assert make_client(cfg, tm, t).complete("question") == "second"
+    assert t.count("generativelanguage") == 2
+
+
+def test_budget_counter_blocks_at_80_percent(cfg, tm):
+    cfg.llm.primary.daily_budget = 10  # 80% = 8 calls
+    t = FakeTransport(gemini=[gemini_ok(f"a{i}") for i in range(20)], groq=[groq_ok()])
+    client = make_client(cfg, tm, t)
+    for i in range(8):
+        client.complete(f"q{i}")
+    with pytest.raises(BudgetNearlyExhausted) as exc:
+        client.complete("q8")
+    assert "gemini" in str(exc.value)
+    assert t.count("generativelanguage") == 8
+    assert t.count("groq.com") == 0  # stops and tells the user instead of silently switching
+
+
+def test_budget_counts_retries_and_persists_across_instances(cfg, tm):
+    cfg.llm.primary.daily_budget = 10
+    t = FakeTransport(gemini=[HttpResponse(429, {}), gemini_ok()] + [gemini_ok()] * 6)
+    first = make_client(cfg, tm, t)
+    first.complete("q0")  # 2 requests (one retry)
+    for i in range(1, 7):
+        first.complete(f"q{i}")  # 6 more -> 8 requests total
+    second = make_client(cfg, tm, t)  # reads the counter from disk
+    with pytest.raises(BudgetNearlyExhausted):
+        second.complete("q-new")
+
+
+def test_budget_resets_on_a_new_day(cfg, tm):
+    cfg.llm.primary.daily_budget = 10
+    t = FakeTransport(gemini=[gemini_ok(f"a{i}") for i in range(9)])
+    day1 = make_client(cfg, tm, t, today="2026-11-10")
+    for i in range(8):
+        day1.complete(f"q{i}")
+    day2 = make_client(cfg, tm, t, today="2026-11-11")
+    assert day2.complete("q-next-day") == "a8"
+
+
+def test_cache_hits_do_not_consume_budget(cfg, tm):
+    cfg.llm.primary.daily_budget = 10
+    t = FakeTransport(gemini=[gemini_ok()])
+    client = make_client(cfg, tm, t)
+    for _ in range(20):
+        client.complete("same question")
+    assert t.count("generativelanguage") == 1
+
+
+def test_throttle_waits_to_respect_rpm(cfg, tm):
+    cfg.llm.primary.rpm = 10  # one request every 6 seconds
+    t = FakeTransport(gemini=[gemini_ok("a"), gemini_ok("b")])
+    client = make_client(cfg, tm, t)
+    client.complete("q1")
+    assert tm.sleeps == []
+    client.complete("q2")
+    assert tm.sleeps == [pytest.approx(6.0)]
+
+
+def test_gemini_request_shape(cfg, tm):
+    t = FakeTransport(gemini=[gemini_ok()])
+    make_client(cfg, tm, t).complete("the prompt", system="the system")
+    call = t.calls[0]
+    assert cfg.llm.primary.model in call["url"]
+    assert GEM_KEY not in call["url"]  # key travels in a header, never in the URL
+    assert call["headers"]["x-goog-api-key"] == GEM_KEY
+    body = call["payload"]
+    assert body["contents"][0]["parts"][0]["text"] == "the prompt"
+    assert body["systemInstruction"]["parts"][0]["text"] == "the system"
+    assert body["generationConfig"]["temperature"] == cfg.llm.temperature
+    assert body["generationConfig"]["maxOutputTokens"] == cfg.llm.max_output_tokens
+
+
+def test_groq_request_shape_and_only_param(cfg, tm):
+    t = FakeTransport(groq=[groq_ok()])
+    out = make_client(cfg, tm, t).complete("the prompt", system="the system", only="groq")
+    assert out == "groq answer"
+    call = t.calls[0]
+    assert call["headers"]["Authorization"] == f"Bearer {GROQ_KEY}"
+    body = call["payload"]
+    assert body["model"] == cfg.llm.fallback.model
+    assert body["messages"] == [
+        {"role": "system", "content": "the system"},
+        {"role": "user", "content": "the prompt"},
+    ]
+    assert body["temperature"] == cfg.llm.temperature
+
+
+def test_missing_key_skips_provider_and_never_calls_it(cfg, tm):
+    t = FakeTransport(groq=[groq_ok()])
+    out = make_client(cfg, tm, t, keys={"GROQ_API_KEY": GROQ_KEY}).complete("question")
+    assert out == "groq answer"
+    assert t.count("generativelanguage") == 0
+
+
+def test_no_keys_raises_error_naming_env_vars_only(cfg, tm):
+    with pytest.raises(LLMError) as exc:
+        make_client(cfg, tm, FakeTransport(), keys={}).complete("question")
+    assert "GEMINI_API_KEY" in str(exc.value)
+
+
+def test_api_keys_never_appear_in_logs(cfg, tm, caplog):
+    attempts = 1 + cfg.llm.max_retries
+    t = FakeTransport(gemini=[HttpResponse(429, {})] * attempts, groq=[groq_ok()])
+    with caplog.at_level(logging.DEBUG):
+        make_client(cfg, tm, t).complete("question")
+    assert GEM_KEY not in caplog.text and GROQ_KEY not in caplog.text
+    assert "groq" in caplog.text.lower()  # but the provider switch is logged
+
+
+def test_budget_file_lives_in_cache_dir(cfg, tm):
+    t = FakeTransport(gemini=[gemini_ok()])
+    make_client(cfg, tm, t).complete("question")
+    data = json.loads((Path(cfg.llm.cache_dir) / "budget.json").read_text())
+    assert data["gemini"] == {"date": "2026-11-10", "calls": 1}
+
+
+# ---------------- generate() ----------------
+
+class FakeLLM:
+    def __init__(self, answer):
+        self.answer, self.calls = answer, []
+
+    def complete(self, prompt, system=None, **kwargs):
+        self.calls.append({"prompt": prompt, "system": system})
+        return self.answer
+
+
+def make_hit(doc_id="3M_2018_10K", page=60, text="Purchases of PP&E (1,577)"):
+    chunk = Chunk(
+        id=f"{doc_id}-{page}", doc_id=doc_id, parent_id="p", text=text,
+        context=f"3M 2018 10-K, page {page}", page=page, company="3M", fiscal_year=2018,
+    )
+    return Hit(chunk_id=chunk.id, score=1.0, chunk=chunk)
+
+
+def test_generate_no_context_says_i_dont_know():
+    llm = FakeLLM("should never be used")
+    result = generate("What was capex?", [], llm)
+    assert result.answer == "I don't know"
+    assert result.citations == [] and result.contexts == []
+    assert llm.calls == []  # no context -> no LLM call spent
+
+
+def test_citations_parsed_into_page_numbers():
+    hits = [make_hit(page=60), make_hit(page=61), make_hit(page=62)]
+    llm = FakeLLM("Capex was $1,577 million [3M_2018_10K p.60]. See also [3M_2018_10K p.61, p.62].")
+    result = generate("What was capex?", hits, llm)
+    assert [(c.doc_id, c.page) for c in result.citations] == [
+        ("3M_2018_10K", 60), ("3M_2018_10K", 61), ("3M_2018_10K", 62),
+    ]
+
+
+def test_citation_to_page_not_in_context_is_dropped():
+    llm = FakeLLM("It was 5 [3M_2018_10K p.60] and 6 [3M_2018_10K p.999].")
+    result = generate("q", [make_hit(page=60)], llm)
+    assert [(c.doc_id, c.page) for c in result.citations] == [("3M_2018_10K", 60)]
+
+
+def test_duplicate_citations_are_collapsed():
+    llm = FakeLLM("A [3M_2018_10K p.60]. B [3M_2018_10K p.60].")
+    result = generate("q", [make_hit(page=60)], llm)
+    assert len(result.citations) == 1
+
+
+@pytest.mark.parametrize("raw", ["I don't know", "I don't know.", "  I don't know \n"])
+def test_i_dont_know_answer_is_exact_with_no_citations(raw):
+    result = generate("q", [make_hit()], FakeLLM(raw))
+    assert result.answer == IDK == "I don't know"
+    assert result.citations == []
+
+
+def test_prompt_carries_context_question_and_rules():
+    llm = FakeLLM("ok [3M_2018_10K p.60]")
+    hit = make_hit(page=60, text="Purchases of PP&E (1,577)")
+    result = generate("What was 3M capex in FY2018?", [hit], llm)
+    call = llm.calls[0]
+    assert "[3M_2018_10K p.60]" in call["prompt"]
+    assert "Purchases of PP&E (1,577)" in call["prompt"]
+    assert "What was 3M capex in FY2018?" in call["prompt"]
+    for rule in ("only the context", "I don't know", "calculation", "[doc_id p.N]"):
+        assert rule in (call["system"] or "") + call["prompt"]
+    assert result.contexts == ["Purchases of PP&E (1,577)"]
+    assert result.latency_ms["llm"] >= 0
+
+
+# ---------------- error messages ----------------
+
+def test_provider_error_message_is_surfaced_with_keys_redacted(cfg, tm):
+    body = {"error": {"message": f"models/x is not found for API version v1beta (key {GEM_KEY})"}}
+    t = FakeTransport(gemini=[HttpResponse(404, body)], groq=[HttpResponse(404, {})])
+    with pytest.raises(LLMError) as exc:
+        make_client(cfg, tm, t).complete("question")
+    text = str(exc.value)
+    assert "HTTP 404" in text and "models/x is not found" in text
+    assert GEM_KEY not in text and "[REDACTED]" in text
+
+
+def test_long_error_messages_are_truncated(cfg, tm):
+    t = FakeTransport(gemini=[HttpResponse(400, {"error": {"message": "x" * 5000}})], groq=[groq_ok()])
+    client = make_client(cfg, tm, t)
+    client.complete("question")  # falls back to groq; failure text is only in the log
+    t2 = FakeTransport(gemini=[HttpResponse(400, {"error": {"message": "x" * 5000}})], groq=[HttpResponse(400, {})])
+    with pytest.raises(LLMError) as exc:
+        make_client(cfg, tm, t2).complete("another question")
+    assert len(str(exc.value)) < 1000
