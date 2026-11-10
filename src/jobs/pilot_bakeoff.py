@@ -67,8 +67,13 @@ def summarize(ranks: list[int]) -> dict:
     }
 
 
-def pilot_cfg(base, short: str, child_tokens: int | None):
+def pilot_cfg(base, short: str, child_tokens: int | None, max_embed: int | None = None,
+              table_group: int | None = None):
     cfg = copy.deepcopy(base)
+    if max_embed:
+        cfg.chunking.max_embed_tokens = max_embed
+    if table_group:
+        cfg.chunking.table_group_tokens = table_group
     model, qp, dp = MODELS[short]
     cfg.embeddings.model, cfg.embeddings.query_prefix, cfg.embeddings.doc_prefix = model, qp, dp
     if child_tokens:
@@ -149,11 +154,14 @@ def run_retrieval(args) -> None:
         out_path.write_text(json.dumps(results, indent=1), encoding="utf-8")
 
     for short in args.models:
-        cfg = pilot_cfg(base, short, args.child_tokens)
+        cfg = pilot_cfg(base, short, args.child_tokens, args.max_embed_tokens, args.table_group_tokens)
         emb = Embedder(cfg)
         tok = EmbedTokenizer(cfg.embeddings.model)
         chunks = [c for m, p in corpus for c in chunk_pages(p, m, cfg, tok=tok)[1]]
         tag_base = f"{short}_c{cfg.chunking.child_tokens}_{len(chunks)}"
+        if args.max_embed_tokens or args.table_group_tokens:
+            tag_base += f"_m{args.max_embed_tokens}_g{args.table_group_tokens}"
+        label = f"c{cfg.chunking.child_tokens} m{cfg.chunking.max_embed_tokens} g{getattr(cfg.chunking, 'table_group_tokens', None)}"
         vecs, secs = embed_cached(emb, chunks, tag_base)
         cps = len(chunks) / secs
         extra = {"chunks": len(chunks), "embed_chunks_per_s": round(cps, 1),
@@ -166,7 +174,7 @@ def run_retrieval(args) -> None:
             variants = {" qprefix=off": False, " qprefix=on": True}
         for suffix, use_qp in variants.items():
             ranks = evaluate(rows, chunks, vecs, emb, cfg, use_qp, bm)
-            record(f"v2 {short} c{cfg.chunking.child_tokens}{suffix}", ranks, extra)
+            record(f"v2 {short} {label}{suffix}", ranks, extra)
         if short == "bge-small" and not args.skip_v1:  # control: the v1 chunks, v1 BM25
             c1 = v1_chunks(base, set(docs))
             v1cfg = copy.deepcopy(cfg)
@@ -243,6 +251,8 @@ def main() -> None:
     a.add_argument("--n-docs", type=int, default=3)
     a.add_argument("--child-tokens", type=int, default=None)
     a.add_argument("--skip-v1", action="store_true")
+    a.add_argument("--max-embed-tokens", type=int, default=None)
+    a.add_argument("--table-group-tokens", type=int, default=None)
     a.add_argument("--out", default="docs/pilot_retrieval.json")
     b = sp.add_parser("rerank")
     b.add_argument("--embed-model", default="bge-small")

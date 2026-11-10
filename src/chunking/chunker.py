@@ -302,7 +302,10 @@ class _PageChunker:
         header, body = lines[:header_n], lines[header_n:]
         prefix = self.prefix_at(b.start)
         ptoks = self.tok.count(prefix) if prefix else self.overhead
-        avail = self.c.max_embed_tokens - ptoks
+        # row groups aim at table_group_tokens (default: fill up to the cap)
+        group_cap = min(getattr(self.c, "table_group_tokens", None) or self.c.max_embed_tokens,
+                        self.c.max_embed_tokens)
+        avail = group_cap - ptoks
         line_toks = [max(self.tok.count(ln) - self.overhead, 0) for ln in lines]
         htoks = sum(line_toks[:header_n])
         if htoks > avail // 2:  # header too big to repeat

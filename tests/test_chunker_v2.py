@@ -153,3 +153,16 @@ def test_embedder_tokenizer_respects_cap_on_a_real_statement():
     parents, chunks = chunk_pages([page], META, c, tok=tok)
     assert len([ch for ch in chunks if ch.row_group is not None]) >= 2
     assert all(tok.count(_full(ch)) <= 480 for ch in chunks)
+
+
+def test_table_group_tokens_makes_smaller_row_groups_without_losing_rows():
+    big = cfg(child_tokens=100, max_embed_tokens=200)
+    small = cfg(child_tokens=100, max_embed_tokens=200)
+    small.chunking.table_group_tokens = 185
+    _, a = _chunks([_page(STATEMENT_PAGE)], big)
+    _, b = _chunks([_page(STATEMENT_PAGE)], small)
+    ga = [c for c in a if c.row_group is not None]
+    gb = [c for c in b if c.row_group is not None]
+    assert len(gb) > len(ga)
+    assert [ln for g in gb for ln in g.text.split("\n")[3:]] == ROWS
+    assert all(TOK.count(_full(c)) <= 185 for c in gb)  # target respected (prefix incl.)

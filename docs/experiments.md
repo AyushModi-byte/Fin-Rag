@@ -153,3 +153,21 @@ Per question, hybrid rank v1 -> v2 (BM25 v1 on both): 00464 13->17, 00563 4->10,
 | jina-tiny | 18.7 | 6 | 0.364 | 0.316 | 0.7 s | 3 / 3 |
 
 Only bge-reranker-v2-m3-int8 looks useful (5 up / 1 down, R@5 0.727) but at 10 s per 20 docs it is far over the 2.5 s CPU target. MiniLM-L12 is within budget (1.9 s) and also shows R@5 up, MRR down. All differences are within noise at n=11.
+
+### Phase 2b: table-splitting fix, offline, bge-small (11 questions, no LLM calls)
+
+Question 00720 (AmEx p.96) was the biggest v1 -> v2 loss, so I first checked its cause by swapping embeddings of only that page's chunks (cached vectors for the rest). Dense gold rank: v2 baseline 36; same row groups with the old short prefix 47; no prefix 101; prefix with company/year/page only 22; **the page as ONE whole table chunk (v1 style, truncated at 512) with the new prefix 23** (v1's own dense rank was 4). So neither the row-group split nor the longer prefix explains the drop: the v1 -> v2 difference comes from *other* chunks that now outrank this page. 00720 is a "gross margin is not a useful metric" question with no natural evidence chunk.
+
+Then one change at a time on top of the v2 baseline (new knob `chunking.table_group_tokens`, target size of row groups for tables over the cap; default = cap = no behaviour change). Hybrid + BM25 v2, query instruction off:
+
+| Variant | mean rank | geo-mean rank | median | R@5 | R@20 | MRR | dense-only median / R@5 / MRR |
+|---|---|---|---|---|---|---|---|
+| v1 control (v1 chunks, BM25 v1) | 13.6 | 7.3 | 5 | 0.545 | 0.818 | 0.246 | 7 / 0.364 / 0.305 |
+| v2 baseline (cap 480, groups fill the cap) | 22.2 | 7.6 | 6 | 0.455 | 0.818 | 0.291 | 7 / 0.455 / 0.294 |
+| row groups of about 250 tokens | 28.7 | 7.2 | 6 | 0.455 | 0.818 | 0.306 | 3 / 0.545 / 0.360 |
+| row groups of about 350 tokens | 25.5 | 7.7 | 5 | 0.545 | 0.727 | 0.300 | 5 / 0.545 / 0.295 |
+| cap 480 -> 512 | 22.2 | 7.6 | 6 | 0.455 | 0.818 | 0.292 | 6 / 0.455 / 0.284 |
+
+- The arithmetic mean rank is dominated by two lost-cause questions (00720 and 01981, ranks 72 to 138 in every variant, 57 in v1). The outlier-robust **geometric-mean rank is 7.2 to 7.7 for every variant, v1 control 7.3**: v2 chunking is not worse than v1 on this pilot, and not better either.
+- None of the three changes is a clear fix. Row groups of 250 help dense retrieval (median 7 -> 3, R@5 +1 question, MRR 0.294 -> 0.360) and rescue 00585 (18 -> 7), but push 00720 further down; hybrid R@5 does not move. Raising the cap to 512 changes almost nothing (tables are 640 to 870 tokens). All differences are one question.
+- Decision: no table-splitting change adopted. Defaults stay (`table_group_tokens` unset). Raw results `docs/pilot_tablefix_*.json`.

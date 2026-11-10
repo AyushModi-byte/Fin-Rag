@@ -1,0 +1,330 @@
+{
+ "docs": [
+  "AMD_2022_10K",
+  "BOEING_2022_10K",
+  "AMERICANEXPRESS_2022_10K"
+ ],
+ "n_questions": 11,
+ "depth": 100,
+ "variants": {
+  "v2 bge-small c300 m512 gNone qprefix=off | dense": {
+   "mean_rank": 19.2,
+   "median_rank": 6,
+   "recall@5": 0.455,
+   "recall@20": 0.727,
+   "mrr": 0.284,
+   "missing": 1,
+   "chunks": 2047,
+   "embed_chunks_per_s": 28.1,
+   "projected_full_hours": 0.16,
+   "ranks": [
+    2,
+    3,
+    6,
+    37,
+    1,
+    14,
+    6,
+    2,
+    3,
+    36,
+    101
+   ]
+  },
+  "v2 bge-small c300 m512 gNone qprefix=off | bm25v1": {
+   "mean_rank": 32.5,
+   "median_rank": 27,
+   "recall@5": 0.182,
+   "recall@20": 0.455,
+   "mrr": 0.103,
+   "missing": 1,
+   "chunks": 2047,
+   "embed_chunks_per_s": 28.1,
+   "projected_full_hours": 0.16,
+   "ranks": [
+    37,
+    13,
+    87,
+    101,
+    40,
+    2,
+    9,
+    9,
+    5,
+    28,
+    27
+   ]
+  },
+  "v2 bge-small c300 m512 gNone qprefix=off | hybrid+bm25v1": {
+   "mean_rank": 18.3,
+   "median_rank": 9,
+   "recall@5": 0.455,
+   "recall@20": 0.818,
+   "mrr": 0.248,
+   "missing": 0,
+   "chunks": 2047,
+   "embed_chunks_per_s": 28.1,
+   "projected_full_hours": 0.16,
+   "ranks": [
+    17,
+    10,
+    17,
+    78,
+    1,
+    5,
+    3,
+    3,
+    2,
+    9,
+    56
+   ]
+  },
+  "v2 bge-small c300 m512 gNone qprefix=off | bm25v2": {
+   "mean_rank": 34.1,
+   "median_rank": 11,
+   "recall@5": 0.364,
+   "recall@20": 0.545,
+   "mrr": 0.204,
+   "missing": 1,
+   "chunks": 2047,
+   "embed_chunks_per_s": 28.1,
+   "projected_full_hours": 0.16,
+   "ranks": [
+    1,
+    11,
+    85,
+    101,
+    74,
+    4,
+    5,
+    8,
+    2,
+    25,
+    59
+   ]
+  },
+  "v2 bge-small c300 m512 gNone qprefix=off | hybrid+bm25v2": {
+   "mean_rank": 22.2,
+   "median_rank": 6,
+   "recall@5": 0.455,
+   "recall@20": 0.818,
+   "mrr": 0.292,
+   "missing": 1,
+   "chunks": 2047,
+   "embed_chunks_per_s": 28.1,
+   "projected_full_hours": 0.16,
+   "ranks": [
+    1,
+    9,
+    17,
+    74,
+    5,
+    5,
+    3,
+    6,
+    1,
+    8,
+    115
+   ]
+  },
+  "v2 bge-small c300 m512 gNone qprefix=on | dense": {
+   "mean_rank": 19.5,
+   "median_rank": 8,
+   "recall@5": 0.364,
+   "recall@20": 0.636,
+   "mrr": 0.291,
+   "missing": 1,
+   "chunks": 2047,
+   "embed_chunks_per_s": 28.1,
+   "projected_full_hours": 0.16,
+   "ranks": [
+    1,
+    6,
+    8,
+    29,
+    1,
+    21,
+    11,
+    2,
+    5,
+    29,
+    101
+   ]
+  },
+  "v2 bge-small c300 m512 gNone qprefix=on | bm25v1": {
+   "mean_rank": 32.5,
+   "median_rank": 27,
+   "recall@5": 0.182,
+   "recall@20": 0.455,
+   "mrr": 0.103,
+   "missing": 1,
+   "chunks": 2047,
+   "embed_chunks_per_s": 28.1,
+   "projected_full_hours": 0.16,
+   "ranks": [
+    37,
+    13,
+    87,
+    101,
+    40,
+    2,
+    9,
+    9,
+    5,
+    28,
+    27
+   ]
+  },
+  "v2 bge-small c300 m512 gNone qprefix=on | hybrid+bm25v1": {
+   "mean_rank": 17.5,
+   "median_rank": 9,
+   "recall@5": 0.364,
+   "recall@20": 0.818,
+   "mrr": 0.245,
+   "missing": 0,
+   "chunks": 2047,
+   "embed_chunks_per_s": 28.1,
+   "projected_full_hours": 0.16,
+   "ranks": [
+    17,
+    10,
+    18,
+    64,
+    1,
+    6,
+    2,
+    3,
+    3,
+    9,
+    59
+   ]
+  },
+  "v2 bge-small c300 m512 gNone qprefix=on | bm25v2": {
+   "mean_rank": 34.1,
+   "median_rank": 11,
+   "recall@5": 0.364,
+   "recall@20": 0.545,
+   "mrr": 0.204,
+   "missing": 1,
+   "chunks": 2047,
+   "embed_chunks_per_s": 28.1,
+   "projected_full_hours": 0.16,
+   "ranks": [
+    1,
+    11,
+    85,
+    101,
+    74,
+    4,
+    5,
+    8,
+    2,
+    25,
+    59
+   ]
+  },
+  "v2 bge-small c300 m512 gNone qprefix=on | hybrid+bm25v2": {
+   "mean_rank": 20.6,
+   "median_rank": 7,
+   "recall@5": 0.364,
+   "recall@20": 0.818,
+   "mrr": 0.244,
+   "missing": 1,
+   "chunks": 2047,
+   "embed_chunks_per_s": 28.1,
+   "projected_full_hours": 0.16,
+   "ranks": [
+    1,
+    8,
+    14,
+    58,
+    7,
+    5,
+    3,
+    6,
+    2,
+    8,
+    115
+   ]
+  }
+ },
+ "questions": [
+  {
+   "id": "financebench_id_00464",
+   "doc_id": "BOEING_2022_10K",
+   "gold_pages": [
+    8
+   ]
+  },
+  {
+   "id": "financebench_id_00563",
+   "doc_id": "AMD_2022_10K",
+   "gold_pages": [
+    48
+   ]
+  },
+  {
+   "id": "financebench_id_00585",
+   "doc_id": "BOEING_2022_10K",
+   "gold_pages": [
+    55
+   ]
+  },
+  {
+   "id": "financebench_id_00720",
+   "doc_id": "AMERICANEXPRESS_2022_10K",
+   "gold_pages": [
+    96
+   ]
+  },
+  {
+   "id": "financebench_id_00757",
+   "doc_id": "AMD_2022_10K",
+   "gold_pages": [
+    12
+   ]
+  },
+  {
+   "id": "financebench_id_00917",
+   "doc_id": "AMD_2022_10K",
+   "gold_pages": [
+    43
+   ]
+  },
+  {
+   "id": "financebench_id_00995",
+   "doc_id": "AMD_2022_10K",
+   "gold_pages": [
+    4
+   ]
+  },
+  {
+   "id": "financebench_id_01091",
+   "doc_id": "BOEING_2022_10K",
+   "gold_pages": [
+    113
+   ]
+  },
+  {
+   "id": "financebench_id_01279",
+   "doc_id": "AMD_2022_10K",
+   "gold_pages": [
+    58
+   ]
+  },
+  {
+   "id": "financebench_id_01351",
+   "doc_id": "AMERICANEXPRESS_2022_10K",
+   "gold_pages": [
+    44
+   ]
+  },
+  {
+   "id": "financebench_id_01981",
+   "doc_id": "AMERICANEXPRESS_2022_10K",
+   "gold_pages": [
+    45
+   ]
+  }
+ ]
+}
