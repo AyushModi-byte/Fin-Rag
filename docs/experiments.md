@@ -15,6 +15,8 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 | 8 | 2026-11-10 | Router year parsing: FY22 two-digit years + latest year when several are named (from the failure analysis; on top of exp 1) | 0.310 | 0.153 | 0.517 | 0.904 (n=19) | 2002 ms | keep |
 | 9 | 2026-11-10 | Drop chunks under 15 tokens at retrieval (`retrieval.min_chunk_tokens: 0 -> 15`; from the failure analysis; on top of exp 8) | 0.345 | 0.196 | 0.517 | 0.909 (n=19) | 1672 ms | keep |
 | 10 | 2026-11-10 | **Index v2** (one re-index): chunker v2 (embedder-tokenizer sizing, table row groups, rich prefix), mxbai-embed-large-v1, BM25 v2 (stemming), `index.version: v2`; router + min_chunk_tokens 15, rerank off | 0.517 | 0.411 | 0.552 | 0.908 (n=21) | 2553 ms | keep |
+| 11 | 2026-11-10 | 5a: query instruction (`Represent this sentence for searching relevant passages: `) ON for mxbai-large (offline only, no eval spent; on top of exp 10) | 0.517 | 0.379 | n/a | n/a | n/a | not adopted (offline: MRR 0.411 -> 0.379, mean rank 13.1 -> 16.6) |
+| 12 | 2026-11-10 | 5e: weighted fusion `retrieval.bm25_weight: 1.0 -> 0.25` (dense weight 1.0; on top of exp 10) | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | 2344 ms | keep |
 
 ### Baseline notes (row 0)
 
@@ -63,6 +65,26 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 - Honest size of the effect: retrieval moved a lot (recall@5 +5 questions, MRR more than doubled) but accuracy only +1 question and +4/-3 swaps, within answerer noise. Retrieval is no longer the main limit on accuracy for the questions it now finds; the remaining misses are reasoning/answering and the lost-cause questions (00720, 01981).
 - Latency p50 2553 ms / p95 11995 ms over 24 uncached questions (p95 from Groq rate-limit waits); retrieval stage p50 about 290 ms with mxbai-large (query embedding on CPU). All LLM calls served by Groq gpt-oss-120b (`groq: 55`, cache 16).
 - Which component earned it is NOT isolated: embedder, chunking and BM25 changed together by design (one re-index). The pilot suggests most of the gain is the embedder (dense MRR 0.408 vs 0.294 for bge-small on the same v2 chunks).
+
+### Experiments 11 and 12 notes (query prefix, fusion weights; offline sweep `python -m src.jobs.fusion_sweep`, results `docs/fusion_sweep.json`)
+
+The sweep retrieves the dense and BM25 candidate lists once per dev question (same router filter, same tiny-chunk filter, production depth 20 per list, plus depth 100 for ranks) and re-fuses them for every variant. Its baseline row reproduces the kept v2 numbers exactly (recall@5 0.517, MRR 0.411), so it matches the pipeline. No LLM calls.
+
+| Variant (n=29) | recall@5 | MRR | mean rank | geo-mean | median |
+|---|---|---|---|---|---|
+| RRF 1:1, prefix off (exp 10) | 0.517 (15) | 0.411 | 13.1 | 4.5 | 3 |
+| RRF 1:1, prefix ON | 0.517 (15) | 0.379 | 16.6 | 5.0 | 4 |
+| dense only, prefix off / ON | 0.621 (18) / 0.621 (18) | 0.426 / 0.400 | 8.5 / 10.7 | 4.0 / 4.5 | 5 / 4 |
+| dense 1 : BM25 0.5 | 0.552 (16) | 0.426 | 9.4 | 3.8 | 2 |
+| **dense 1 : BM25 0.25 (adopted)** | 0.586 (17) | 0.452 | 8.6 | 3.6 | 2 |
+| dense 1 : BM25 0.1 | 0.621 (18) | 0.480 | 8.5 | 3.8 | 3 |
+| RRF 1:1, rrf_k 10 / 30 / 100 | 0.552 / 0.517 / 0.517 | 0.437 / 0.411 / 0.411 | 13.4 / 13.5 / 13.2 | 4.5 / 4.6 / 4.6 | 3 |
+| BM25 only | 0.241 (7) | 0.159 | 32.8 | 15.6 | 16 |
+
+- **5a (experiment 11):** the query instruction does not help mxbai-large (MRR down in both hybrid and dense-only, recall@5 unchanged). It stays off (`embeddings.query_prefix: ""`). No dev eval was spent because offline retrieval did not improve.
+- **5e (experiment 12):** the trend is monotonic: the less weight BM25 gets, the better the ranking, matching the pilot where mxbai's dense ranking beat its hybrid. Adopted 0.25, not the best-scoring 0.1, deliberately: 0.1 is one question better (18 vs 17 at recall@5) but nearly dense-only, and with n=29 and three tried values I prefer to keep BM25 doing real work on exact numbers. `rrf_k` changes did nothing meaningful and were not adopted.
+- **Dev eval for 12** (`data/eval/runs/20261110T140849_dev.json`, zero errors): vs exp 10, recall@5 0.517 -> 0.586 (15/29 -> 17/29; gained 00563, 00566; lost none), MRR 0.411 -> 0.452 (exactly the offline prediction), accuracy 0.552 -> 0.586 (16/29 -> 17/29; gained 04672; lost none), faithfulness 0.908 -> 0.930 (n=21 -> 22), "I don't know" 8 -> 7. Decision: keep. Honest size: +2 questions on recall@5 and +1 on accuracy, small on n=29, but no question got worse and the offline sweep predicted it. Note the weight was chosen on this same dev set (3 values tried), so the test split is the real check.
+- Rollback: set `retrieval.bm25_weight: 1.0` (plain RRF).
 
 ## Final (test split, run once)
 
