@@ -171,3 +171,13 @@ Then one change at a time on top of the v2 baseline (new knob `chunking.table_gr
 - The arithmetic mean rank is dominated by two lost-cause questions (00720 and 01981, ranks 72 to 138 in every variant, 57 in v1). The outlier-robust **geometric-mean rank is 7.2 to 7.7 for every variant, v1 control 7.3**: v2 chunking is not worse than v1 on this pilot, and not better either.
 - None of the three changes is a clear fix. Row groups of 250 help dense retrieval (median 7 -> 3, R@5 +1 question, MRR 0.294 -> 0.360) and rescue 00585 (18 -> 7), but push 00720 further down; hybrid R@5 does not move. Raising the cap to 512 changes almost nothing (tables are 640 to 870 tokens). All differences are one question.
 - Decision: no table-splitting change adopted. Defaults stay (`table_group_tokens` unset). Raw results `docs/pilot_tablefix_*.json`.
+
+### Phase 2c: child size with the winner (mxbai-large, no query prefix, same 11 questions)
+
+| child_tokens | chunks (3 filings) | dense MRR / geo-mean rank / R@5 | hybrid+BM25 v2 geo-mean rank / R@5 | full-build time projected from the pilot |
+|---|---|---|---|---|
+| 256 | 2,419 | 0.473 / 4.1 / 0.545 | 5.1 / 0.636 | about 2.0 h |
+| **300** | 2,061 | 0.408 / 5.0 / 0.636 | 5.9 / 0.455 | **about 1.4 h** |
+| 384 | 1,658 | 0.420 / 4.7 / 0.727 | 4.9 / 0.545 | about 2.0 h |
+
+Differences are within noise at n=11 (one question = 0.09 recall), so the rule "within noise: pick the faster" gives **child_tokens 300**. (The `projected_full_hours` column in `docs/pilot_*.json` assumes 16,101 chunks for every size; the times above are recomputed from each run's own chunk rate and the corpus ratio 7.8x.) Chosen v2 config: mxbai-large (1024-d), no query/doc prefix, child 300, overlap 40, cap 480, BM25 v2, rerank off. Rollback: `config.v1.yaml` (index v1, bge-small, BM25 v1); run any job with `--config config.v1.yaml`.

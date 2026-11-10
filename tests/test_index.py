@@ -20,6 +20,13 @@ TEXTS = [
 ]
 
 
+def small_cfg():
+    c = load_config()
+    c.embeddings.model = "BAAI/bge-small-en-v1.5"  # fast model for tests, whatever config.yaml uses
+    c.embeddings.query_prefix = c.embeddings.doc_prefix = ""
+    return c
+
+
 def make_chunks() -> list[Chunk]:
     chunks = []
     for i, (company, year, text) in enumerate(TEXTS):
@@ -35,12 +42,12 @@ def make_chunks() -> list[Chunk]:
 
 @pytest.fixture(scope="module")
 def embedder():
-    return Embedder(load_config())
+    return Embedder(small_cfg())
 
 
 @pytest.fixture
 def cfg(tmp_path):
-    c = load_config()
+    c = small_cfg()
     c.index.dir = str(tmp_path / "index")
     c.index.version = "vtest"  # v1 is protected (rollback)
     return c

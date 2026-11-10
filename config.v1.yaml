@@ -1,0 +1,33 @@
+index: {version: v1, dir: .cache/index, collection: finrag_chunks, shard_size: 500, protected_versions: [v1]}
+reindex: {max_hours: 2.0, probe_chunks: 60}
+lexical: {stopwords: en, tokenizer: v1, stem: false}
+embeddings: {model: BAAI/bge-small-en-v1.5, batch_size: 1, sort_by_length: true, threads: null, query_prefix: "", doc_prefix: ""}
+chunking: {child_tokens: 300, overlap_tokens: 40, max_embed_tokens: 480, min_tokens: 15, max_header_rows: 3, max_heading_chars: 80, context_prefix: true}
+retrieval: {top_k: 20, rrf_k: 60, use_router_filter: true, min_chunk_tokens: 15}
+rerank: {enabled: false, model: Xenova/ms-marco-MiniLM-L-6-v2, top_n: 5}
+llm:
+  primary: {provider: groq, model: openai/gpt-oss-120b, rpm: 25, daily_budget: 1000, api_key_envs: [GROQ_API_KEY_1, GROQ_API_KEY_2, GROQ_API_KEY_3]}
+  fallback: null          # Gemini removed (persistent 503s); a 2nd provider can be added here later
+  endpoints:
+    gemini: "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    groq: "https://api.groq.com/openai/v1/chat/completions"
+  temperature: 0
+  max_output_tokens: 2048
+  key_cooldown_s: 60      # a key that returned 429 is skipped for this long while other keys are fresh
+  max_retry_wait_s: 65    # upper bound on one wait, incl. a provider's "try again in" hint
+  backoff_base_s: 2.0     # retry waits: base * 2**attempt
+  timeout_s: 30
+  max_retries: 2          # per provider, with exponential backoff, then switch provider
+  cache_dir: .cache/llm
+  budget_warn_ratio: 0.8  # stop and tell the user at 80% of a daily budget
+cache: {enabled: true, threshold: 0.95}
+acl: {default: "*", users: {}}
+eval: {dev_ratio: 0.5, seed: 42, n_companies: 10, min_questions: 50, recall_k: 5, runs_dir: data/eval/runs, judge_max_output_tokens: 4096}
+data:
+  questions_url: https://raw.githubusercontent.com/patronus-ai/financebench/main/data/financebench_open_source.jsonl
+  pdf_url: https://raw.githubusercontent.com/patronus-ai/financebench/main/pdfs/{doc_id}.pdf
+  raw_dir: data/raw
+  parsed_dir: data/parsed
+  log_file: logs/app.log
+  eval_dir: data/eval
+  timeout_s: 60
