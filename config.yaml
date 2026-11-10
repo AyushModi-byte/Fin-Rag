@@ -1,5 +1,5 @@
 index: {version: v2, dir: .cache/index, collection: finrag_chunks, shard_size: 500, protected_versions: [v1]}
-reindex: {max_hours: 2.0, probe_chunks: 60}
+reindex: {max_hours: 2.5, probe_chunks: 60}
 lexical: {stopwords: en, tokenizer: v2, stem: true}
 embeddings: {model: mixedbread-ai/mxbai-embed-large-v1, batch_size: 1, sort_by_length: true, threads: null, query_prefix: "", doc_prefix: ""}
 chunking: {child_tokens: 300, overlap_tokens: 40, max_embed_tokens: 480, min_tokens: 15, max_header_rows: 3, max_heading_chars: 80, context_prefix: true}
