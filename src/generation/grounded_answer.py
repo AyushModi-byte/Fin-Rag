@@ -28,7 +28,7 @@ def parse_citations(answer: str, hits: list[Hit]) -> list[Citation]:
     return citations
 
 
-def generate(q: str, hits: list[Hit], llm) -> QueryResult:
+def generate(q: str, hits: list[Hit], llm, system: str = SYSTEM_GROUNDED) -> QueryResult:
     """Grounded answer with [doc_id p.N] citations, or exactly "I don't know".
 
     With no retrieved context no LLM call is made.
@@ -36,7 +36,7 @@ def generate(q: str, hits: list[Hit], llm) -> QueryResult:
     if not hits:
         return QueryResult(answer=IDK, citations=[], contexts=[], latency_ms={"llm": 0.0})
     start = time.perf_counter()
-    raw = llm.complete(build_grounded_prompt(q, hits), system=SYSTEM_GROUNDED)
+    raw = llm.complete(build_grounded_prompt(q, hits), system=system)
     elapsed_ms = (time.perf_counter() - start) * 1000
     contexts = [h.chunk.text for h in hits]
     if _is_idk(raw):

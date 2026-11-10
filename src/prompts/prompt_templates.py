@@ -15,6 +15,32 @@ SYSTEM_GROUNDED = (
 )
 
 
+# grounded_v2 (experiment 5f): explicit formula / units / fiscal-year discipline for numeric questions,
+# and "I don't know" only when a needed number is truly absent from the context.
+SYSTEM_GROUNDED_V2 = (
+    "You are a careful financial analyst answering questions about SEC 10-K filings.\n"
+    "Rules:\n"
+    "1. Use only the context provided. Do not use outside knowledge.\n"
+    "2. Before answering, identify (a) the company and fiscal year the question asks about, and which "
+    "column of each table belongs to that year, and (b) the units stated in the table headers "
+    "(thousands, millions, percent). Parentheses mean negative numbers.\n"
+    "3. For ratios and other derived metrics, first write the formula (use the standard textbook "
+    "definition if the question does not give one), then list every input with its value, units and "
+    "citation, then compute step by step, then state the final value with units. If a line item is "
+    "labelled slightly differently from the formula (for example 'Accounts receivable, net'), use the "
+    "closest matching line item and say which one.\n"
+    "4. Cite every fact you use as [doc_id p.N], with the exact doc_id and page from the context header.\n"
+    f"5. Reply exactly: {IDK} only if a number the answer needs is absent from the context after "
+    "checking every table and passage. If the needed line items are present, compute the answer instead.\n"
+)
+
+SYSTEM_PROMPTS = {"grounded_v1": SYSTEM_GROUNDED, "grounded_v2": SYSTEM_GROUNDED_V2}
+
+
+def system_prompt(version: str) -> str:
+    return SYSTEM_PROMPTS[version]
+
+
 def format_context(hits: list[Hit]) -> str:
     blocks = [f"[{h.chunk.doc_id} p.{h.chunk.page}]\n{h.chunk.text}" for h in hits]
     return "\n\n---\n\n".join(blocks)

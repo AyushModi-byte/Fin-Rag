@@ -11,6 +11,7 @@ from pathlib import Path
 from src.config import load_config
 from src.generation.context_expansion import expand_context
 from src.generation.grounded_answer import generate
+from src.prompts.prompt_templates import system_prompt
 from src.query.query_router import route
 from src.schemas.models import Hit, QueryResult
 
@@ -61,7 +62,7 @@ class QueryPipeline:
         context = ranked[: self.cfg.rerank.top_n]
         if self.cfg.generation.expand_tables:
             context = expand_context(context, self.parents, self.cfg.generation.max_context_tokens)
-        result = generate(q, context, self.llm)
+        result = generate(q, context, self.llm, system=system_prompt(self.cfg.generation.prompt_version))
         result.latency_ms = {
             "retrieve": retrieve_ms,
             "rerank": rerank_ms,
