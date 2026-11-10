@@ -37,6 +37,22 @@ def test_rrf_scores_sorted_descending():
     assert scores == sorted(scores, reverse=True)
 
 
+def test_weighted_rrf_scales_each_list():
+    dense = [make_hit("a"), make_hit("b")]
+    lexical = [make_hit("c"), make_hit("a")]
+    fused = rrf([dense, lexical], k=60, weights=[1.0, 0.25])
+    assert {h.chunk_id: h.score for h in fused}["a"] == pytest.approx(1 / 61 + 0.25 / 62)
+    assert {h.chunk_id: h.score for h in fused}["c"] == pytest.approx(0.25 / 61)
+    assert [h.chunk_id for h in fused][:2] == ["a", "b"]  # dense-leaning order
+
+
+def test_rrf_default_weights_unchanged():
+    dense, lexical = [make_hit("a"), make_hit("b")], [make_hit("b")]
+    assert [h.score for h in rrf([dense, lexical], k=60)] == [
+        h.score for h in rrf([dense, lexical], k=60, weights=[1.0, 1.0])
+    ]
+
+
 # ---- HybridRetriever (fakes for the two stores; fusion logic is real) ----
 
 class FakeStore:
@@ -55,8 +71,15 @@ class FakeBM25(FakeStore):
 
 
 class FakeEmbedder:
+    def __init__(self):
+        self.queries = []
+
     def embed(self, texts):
         return np.ones((len(texts), 4), dtype=np.float32)
+
+    def embed_query(self, text):
+        self.queries.append(text)
+        return np.ones(4, dtype=np.float32)
 
 
 def test_hybrid_retriever_fuses_and_passes_filters_to_both():
@@ -71,6 +94,19 @@ def test_hybrid_retriever_fuses_and_passes_filters_to_both():
     assert len(hits) == 3
     assert store.calls == [(3, filters)]
     assert bm25.calls == [("capex", 3, filters)]
+
+
+def test_retriever_uses_config_fusion_weights_and_query_embedding():
+    cfg = load_config()
+    cfg.retrieval.min_chunk_tokens = 0
+    cfg.retrieval.dense_weight, cfg.retrieval.bm25_weight = 1.0, 0.1
+    emb = FakeEmbedder()
+    retriever = HybridRetriever(
+        FakeStore([make_hit("d1"), make_hit("d2")]), FakeBM25([make_hit("b1"), make_hit("d2")]), emb, cfg
+    )
+    hits = retriever.retrieve("capex", k=4)
+    assert emb.queries == ["capex"]  # goes through embed_query (applies the query prefix)
+    assert [h.chunk_id for h in hits][:2] == ["d2", "d1"]  # d2 is in both lists; d1 beats b1
 
 
 # ---- Reranker (real cross-encoder) ----
