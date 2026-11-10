@@ -19,6 +19,8 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 | 12 | 2026-11-10 | 5e: weighted fusion `retrieval.bm25_weight: 1.0 -> 0.25` (dense weight 1.0; on top of exp 10) | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | 2344 ms | keep |
 | 13 | 2026-11-10 | 5c: parent expansion for generation (`generation.expand_tables: true`, `max_context_tokens: 4000`; on top of exp 12) | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | 3338 ms | not adopted (no change) |
 | 14 | 2026-11-10 | 5f: numeric-reasoning prompt `grounded_v2` (formula, units, fiscal-year check, "I don't know" only if a number is absent; `generation.prompt_version`; on top of exp 12) | 0.586 | 0.452 | 0.552 | 0.846 (n=22) | 3669 ms | revert (accuracy and faithfulness worse) |
+| 15 | 2026-11-10 | 5b: cross-encoder rerank on top of exp 12 (offline, all 29 dev questions: MiniLM-L12, jina-turbo, bge-reranker-base, bge-reranker-v2-m3-int8; pool top_k 20 and 30) | best 0.621 (jina-turbo, k20) vs 0.586 | all lower than 0.452 (best 0.387) | n/a | n/a | 1.3 to 11.9 s per question | not adopted (no eval spent) |
+| 16 | 2026-11-10 | 5d: `rerank.top_n` 5 -> 8 (chunks given to the LLM; on top of exp 12) | n/a | n/a | n/a (invalid run: 11/29 errors) | n/a | n/a | **not completed** (Groq tokens-per-day limit); rerun when the quota frees |
 
 ### Baseline notes (row 0)
 
@@ -101,6 +103,30 @@ The sweep retrieves the dense and BM25 candidate lists once per dev question (sa
 - It did not fix what it was written for: 03856, 03882 and 04735 (numeric questions with the gold page in the top 5) still answer "I don't know", so the numbers they need are not in the context (they are on another chunk or page); a prompt cannot supply them. 00566 (Verizon debt) is still wrong.
 - Faithfulness fell on 6 questions (00464 1.0 -> 0.5, 01091 1.0 -> 0.5, 03069, 00757, 01351, 00917) because the step-by-step answers carry more claims for the judge to check; it rose on 01009 (0.5 -> 0.86). Rolled back: `prompt_version: grounded_v1`.
 - Remaining dev failures (12 wrong at exp 12): 8 are retrieval misses (recall 0: 00438, 00585, 00720, 00799, 01009, 01226, 01279, 01981), 4 had the gold page in the top 5 (00566 wrong computation; 03856, 03882, 04735 "I don't know").
+
+### Experiment 15 notes (5b rerank, offline on all 29 dev questions; `python -m src.jobs.rerank_dev`, raw lines in `docs/rerank_dev_partial.jsonl`)
+
+Candidates are the current hybrid results (mxbai-large, BM25 weight 0.25, router filter). Reference without rerank: top_k 20 -> recall@5 0.586 (17/29), MRR 0.452, mean/geo/median gold rank 17.2 / 4.4 / 4; top_k 30 -> recall@5 0.586, MRR 0.477, 14.8 / 4.1 / 3.
+
+| Reranker | top_k | recall@5 | MRR | geo rank | latency per question | questions better / worse | table-gold questions pushed down / up (of 12-13) |
+|---|---|---|---|---|---|---|---|
+| MiniLM-L12 | 20 | 0.483 | 0.285 | 6.7 | 2.3 s | 2 / 20 | **12 / 0** |
+| jina-turbo | 20 | 0.621 | 0.387 | 5.2 | 1.3 s | 5 / 7 | 2 / 3 |
+| bge-reranker-base | 20 | 0.552 | 0.374 | 5.4 | 5.4 s | 8 / 12 | 6 / 4 |
+| bge-reranker-v2-m3-int8 | 20 | 0.552 | 0.331 | 5.6 | 11.9 s | 8 / 12 | 8 / 3 |
+| MiniLM-L12 | 30 | 0.517 | 0.291 | 6.7 | 3.3 s | 4 / 18 | 11 / 1 |
+| jina-turbo | 30 | 0.483 | 0.370 | 5.6 | 2.0 s | 5 / 11 | 4 / 4 |
+| bge-reranker-base | 30 | 0.483 | 0.358 | 5.8 | 8.0 s | 7 / 13 | 7 / 3 |
+
+- **No reranker beats the un-reranked ranking.** Every reranker lowers MRR (0.331 to 0.387 vs 0.452) and most lower recall@5; the single higher recall@5 (jina-turbo, k20, 0.621, +1 question) comes with a much worse MRR and 7 questions worse vs 5 better. On all 29 dev questions, the table concern is confirmed: MiniLM-L12 pushes the gold table chunk down in 12 of 12 table questions, and the bigger models do it in 6 to 8. Decision: **not adopted**; `rerank.enabled` stays false. No dev eval was spent.
+- The last variant (bge-reranker-v2-m3-int8 at top_k 30) did not run: the job was stopped by the system because the machine was low on memory. It is not needed for the decision: the same model at top_k 20 averages 11.9 s per question (target about 2.5 s) and scores below no rerank.
+- Side observation, not an experiment: widening the candidate pool without rerank (`retrieval.top_k` 20 -> 30) leaves recall@5 at 0.586 and lifts MRR 0.452 -> 0.477 and mean gold rank 17.2 -> 14.8. By the rule (keep only if recall@5 or accuracy improves) it is not worth a dev eval.
+
+### Experiment 16 notes (5d top_n 8: NOT completed)
+
+- Offline prefilter: with the current retrieval, gold page in the top 5 for 18 questions, at rank 6 for 3 (00585, 00790, 01279), ranks 10 to 14 for 4 more; so top_n 8 can only help up to 3 questions.
+- The dev run (`data/eval/runs/20261110T153328_dev.json`) is **invalid: 11 of 29 questions errored with Groq HTTP 429 on tokens per day (TPD)**: two of the three accounts reported 199,087 and 198,001 of 200,000 tokens used. Its recall@5 0.379 and accuracy 0.345 are NOT results of top_n 8 and must not be quoted. 18 answers were served before the quota ran out and are in the LLM disk cache, so a rerun needs only about 11 new answers plus judges.
+- Root cause on our side: `LLMClient` counts requests per key per day (719 of 3,000 today) but not tokens, so its 80% guard never fired. Config reverted to `top_n: 5`. A token counter (Groq returns `usage` in every response) is the fix to add before the next large eval.
 
 ## Final (test split, run once)
 
