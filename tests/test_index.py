@@ -42,6 +42,7 @@ def embedder():
 def cfg(tmp_path):
     c = load_config()
     c.index.dir = str(tmp_path / "index")
+    c.index.version = "vtest"  # v1 is protected (rollback)
     return c
 
 
@@ -129,3 +130,17 @@ def test_embedder_sorting_preserves_input_order(embedder):
     embedder.sort_by_length = True
     sorted_ = embedder.embed(texts)
     assert abs(plain - sorted_).max() < 1e-4
+
+
+def test_query_and_document_prefixes_are_applied(embedder):
+    seen = []
+    real = embedder._model.embed
+    embedder._model.embed = lambda texts, **kw: (seen.extend(texts), real(texts, **kw))[1]
+    try:
+        embedder.query_prefix, embedder.doc_prefix = "Q: ", "D: "
+        embedder.embed_query("revenue")
+        embedder.embed_documents(["table"])
+    finally:
+        embedder._model.embed = real
+        embedder.query_prefix = embedder.doc_prefix = ""
+    assert seen == ["Q: revenue", "D: table"]

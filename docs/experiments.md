@@ -109,3 +109,47 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 
 - Padding to the longest text in a batch is the cost: smaller batches are faster, threads and data-parallel workers do not help. Applied: `embeddings.batch_size: 1`, `sort_by_length: true` (3.7x faster than v1's setting).
 - At 0.12 s/chunk (batch 32) the v1 build should have taken about 32 min, not 11,558 s (0.73 s/chunk); machine sleep or heavy background load during that build is the likely cause (not re-measured). CPU load during the benchmark was ~23% from other processes (Chrome, Docker), balanced power plan, on battery 96%.
+
+## Phase 2 pilot bake-off (offline, no LLM calls; 3 filings, 11 dev questions, 2,061 v2 chunks)
+
+Script: `python -m src.jobs.pilot_bakeoff retrieval|rerank`; raw results `docs/pilot_*.json`. Filings: AMD 2022 (5 q), Boeing 2022 (3), AmEx 2022 (3). The filter is the gold doc (oracle router). Metrics are page level over the full filtered ranking (depth 100; "missing" = rank 101). **n = 11, so one question moves recall@5 by 0.09: treat differences below about 0.1 recall or 3 mean-rank points as noise.** Projected full time = pilot chunks/s scaled to 16,101 chunks.
+
+| Variant (v2 chunks c300 unless noted) | mean rank | median | R@5 | R@20 | MRR | chunks/s | full build |
+|---|---|---|---|---|---|---|---|
+| **v1 control**: v1 chunks, bge-small, BM25 v1, hybrid | 13.6 | 5 | 0.545 | 0.818 | 0.246 | 30.5 | (v1) |
+| v1 control, dense only | 17.3 | 7 | 0.364 | 0.818 | 0.305 | | |
+| bge-small, dense (no prefix) | 19.1 | 7 | 0.455 | 0.727 | 0.294 | 28.8 | 0.16 h |
+| bge-small, hybrid + BM25 v1 | 18.3 | 9 | 0.455 | 0.818 | 0.293 | | |
+| bge-small, hybrid + BM25 v2 | 22.2 | 6 | 0.455 | 0.818 | 0.291 | | |
+| bge-base, dense (no prefix) | 17.9 | 7 | 0.455 | 0.818 | 0.298 | 10.1 | 0.44 h |
+| bge-base, hybrid + BM25 v2 | 21.2 | 5 | 0.545 | 0.727 | 0.315 | | |
+| bge-base, dense, query instruction ON | 14.5 | 6 | 0.455 | 0.727 | 0.253 | | |
+| arctic-m, dense, query instruction OFF | 25.8 | 17 | 0.091 | 0.636 | 0.080 | 10.7 | 0.42 h |
+| arctic-m, dense, query instruction ON | 15.7 | 6 | 0.455 | 0.818 | 0.282 | | |
+| arctic-m, hybrid + BM25 v2 (ON) | 23.3 | 8 | 0.455 | 0.727 | 0.299 | | |
+| nomic-v1.5, dense (prefixes ON) | 22.5 | 15 | 0.273 | 0.727 | 0.152 | 7.4 | 0.60 h |
+| gte-base, dense | 14.2 | 6 | 0.455 | 0.727 | 0.279 | 10.7 | 0.42 h |
+| gte-base, hybrid + BM25 v2 | 20.0 | 7 | 0.455 | 0.818 | 0.303 | | |
+| **mxbai-large, dense (no prefix)** | **12.3** | **5** | **0.636** | 0.727 | **0.408** | 3.1 | 1.46 h |
+| mxbai-large, hybrid + BM25 v2 (no prefix) | 18.1 | 6 | 0.455 | 0.818 | 0.386 | | |
+| mxbai-large, dense, query instruction ON | 16.3 | 5 | 0.636 | 0.727 | 0.345 | | |
+
+- BM25 alone, same 11 questions: v1 tokenizer mean 32.6 / median 27 / R@5 0.182 / MRR 0.103; **v2 (stemmed, numbers kept) 34.5 / 11 / 0.364 / 0.182** (identical for every model's chunking up to tokenizer differences). v2 is clearly better at the median, but the hybrid result is dominated by the dense side.
+- Query instruction: helps arctic-m a lot (required), hurts or is neutral for bge and mxbai (dense MRR 0.408 -> 0.345 for mxbai). Offline A/B only; to be re-checked in Phase 5a.
+- Hybrid is not better than dense alone for mxbai-large (mean rank 18.1 vs 12.3): fusion adds BM25's weak ranks.
+
+### v1 vs v2 chunking, same model (bge-small), same 11 questions
+Per question, hybrid rank v1 -> v2 (BM25 v1 on both): 00464 13->17, 00563 4->10, 00585 28->18, **00720 19->77**, 00757 1->1, 00917 4->5, 00995 4->3, 01091 2->3, **01279 5->1**, 01351 13->9, 01981 57->57. Mean rank is dominated by 00720 (AmEx p.96: a whole 1,900-character income statement used to be one chunk, v2 splits it into three row groups and the dense match drops 4 -> 36) . MRR is better in v2 (0.293 vs 0.246), recall@5 one question worse (0.455 vs 0.545), mean rank worse (18.3 vs 13.6), median 9 vs 5. This is mixed, not a clear win.
+
+### Reranker bake-off (top 20 -> reorder, candidates = mxbai-large hybrid + BM25 v2; gold page is in the top-20 pool for 9 of 11)
+| Reranker | mean rank | median | R@5 | MRR | latency / 20 docs | improved / worsened |
+|---|---|---|---|---|---|---|
+| none | 18.1 | 6 | 0.455 | 0.386 | | |
+| MiniLM-L6 (current, control) | 18.2 | 5 | 0.545 | 0.315 | 1.0 s | 3 / 3 |
+| MiniLM-L12 | 18.0 | 4 | 0.636 | 0.331 | 1.9 s | 4 / 3 |
+| bge-reranker-base | 17.9 | 6 | 0.364 | 0.427 | 4.8 s | 3 / 3 |
+| bge-reranker-v2-m3-int8 | 16.6 | 3 | 0.727 | 0.385 | 10.4 s | 5 / 1 |
+| jina-turbo | 18.8 | 6 | 0.455 | 0.225 | 1.2 s | 3 / 4 |
+| jina-tiny | 18.7 | 6 | 0.364 | 0.316 | 0.7 s | 3 / 3 |
+
+Only bge-reranker-v2-m3-int8 looks useful (5 up / 1 down, R@5 0.727) but at 10 s per 20 docs it is far over the 2.5 s CPU target. MiniLM-L12 is within budget (1.9 s) and also shows R@5 up, MRR down. All differences are within noise at n=11.

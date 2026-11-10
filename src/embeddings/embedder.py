@@ -14,8 +14,16 @@ class Embedder:
         self.model_id: str = e.model
         self.batch_size: int = e.batch_size
         self.sort_by_length: bool = getattr(e, "sort_by_length", False)
+        self.query_prefix: str = getattr(e, "query_prefix", "") or ""  # e.g. bge instruction, nomic
+        self.doc_prefix: str = getattr(e, "doc_prefix", "") or ""
         self.dim: int = TextEmbedding.get_embedding_size(self.model_id)
         self._model = TextEmbedding(model_name=self.model_id, threads=getattr(e, "threads", None))
+
+    def embed_query(self, text: str) -> np.ndarray:
+        return self.embed([self.query_prefix + text])[0]
+
+    def embed_documents(self, texts: list[str]) -> np.ndarray:
+        return self.embed([self.doc_prefix + t for t in texts])
 
     def embed(self, texts: list[str]) -> np.ndarray:
         if not texts:
