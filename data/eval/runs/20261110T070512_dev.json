@@ -1,0 +1,1394 @@
+{
+  "summary": {
+    "split": "dev",
+    "limit": null,
+    "n": 29,
+    "completed": 29,
+    "stopped_early": false,
+    "errors": 0,
+    "idk": 10,
+    "recall_at_5": 0.3448275862068966,
+    "mrr": 0.1961091892580096,
+    "accuracy": 0.5172413793103449,
+    "faithfulness": 0.9086466165413533,
+    "faithfulness_n": 19,
+    "latency_n": 8,
+    "latency_p50_ms": 1671.7830000561662,
+    "latency_p95_ms": 3036.2806999473833,
+    "stage_p50_ms": {
+      "total": 1671.7830000561662,
+      "retrieve": 170.35009997198358,
+      "rerank": 0.0,
+      "llm": 1491.8628999730572
+    },
+    "served_by": {
+      "cache": 47,
+      "groq": 20
+    },
+    "generation_source": {
+      "cache": 21,
+      "groq": 8
+    },
+    "config": {
+      "router": true,
+      "rerank": false,
+      "top_k": 20,
+      "top_n": 5,
+      "child_tokens": 256,
+      "context_prefix": true,
+      "embedding_model": "BAAI/bge-small-en-v1.5",
+      "primary": "openai/gpt-oss-120b",
+      "fallback": null
+    },
+    "run_file": "data\\eval\\runs\\20261110T070512_dev.json"
+  },
+  "questions": [
+    {
+      "id": "financebench_id_00215",
+      "question": "Is Verizon a capital intensive business based on FY 2022 data?",
+      "gold_answer": "Yes. Verizon's capital intensity ratio was approximately 2.774729. This means that it took approximately $2.77 of assets to generate $1 of revenue and thus, Verizon can be considered capital intensive.",
+      "doc_id": "VERIZON_2022_10K",
+      "gold_pages": [
+        23,
+        56
+      ],
+      "answer": "Yes. Verizon\u2019s FY\u202f2022 results show that it spent a very large amount on capital assets, which is a hallmark of a capital\u2011intensive business. During the year ended December\u202f31\u202f2022 the company recorded **$23.1\u202fbillion in capital expenditures**, including roughly **$6.2\u202fbillion for C\u2011Band\u2011related spending**\u3010VERIZON_2022_10K p.23\u3011. Such multi\u2011billion\u2011dollar annual investment in network infrastructure and advanced technologies demonstrates that Verizon operates as a capital\u2011intensive business.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 38
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 11
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 23
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 12
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 37
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 172.91179997846484,
+        "rerank": 0.0,
+        "llm": 0.44519995572045445,
+        "total": 174.00949995499104
+      },
+      "generation_source": "cache",
+      "recall": 1.0,
+      "mrr": 0.3333333333333333,
+      "correct": true,
+      "faithfulness": 0.6
+    },
+    {
+      "id": "financebench_id_00438",
+      "question": "Does Adobe have an improving operating margin profile as of FY2022? If operating margin is not a useful metric for a company like this, then state that and explain why.",
+      "gold_answer": "No the operating margins of Adobe have recently declined from 36.8% in FY 2021 to 34.6% in FY2022. A drop by 2.2% in a year.",
+      "doc_id": "ADOBE_2022_10K",
+      "gold_pages": [
+        54
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 38
+        },
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 88
+        },
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 89
+        },
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 64
+        },
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 45
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 172.34259995166212,
+        "rerank": 0.0,
+        "llm": 0.394799979403615,
+        "total": 172.86420002346858
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_00464",
+      "question": "Is Boeing's business subject to cyclicality?",
+      "gold_answer": "Yes, Boeing's business is subject to cyclicality due to its exposure to the airline industry which is a cyclical industry.",
+      "doc_id": "BOEING_2022_10K",
+      "gold_pages": [
+        8
+      ],
+      "answer": "Yes. Boeing\u2019s business is subject to cyclicality. The filing notes that its operating cycle is long\u2011term and that \u201cperiod\u2011to\u2011period comparisons of backlog are not necessarily indicative of future workloads\u201d and that results \u201cmay not be indicative of future operating results\u201d\u3010BOEING_2018_10K p.33\u3011. It also states that \u201cfluctuate significantly from period to period\u201d and that changes in escalation amounts can \u201csignificantly impact revenues and operating margins\u201d\u3010BOEING_2018_10K p.8\u3011. These passages indicate that Boeing\u2019s results can vary from period to period, reflecting cyclicality in its business.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 32
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 12
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 33
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 13
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 8
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 158.13060000073165,
+        "rerank": 0.0,
+        "llm": 0.38409995613619685,
+        "total": 158.61179999774322
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.09090909090909091,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_00563",
+      "question": "From FY21 to FY22, excluding Embedded, in which AMD reporting segment did sales proportionally increase the most?",
+      "gold_answer": "Data Center",
+      "doc_id": "AMD_2022_10K",
+      "gold_pages": [
+        48
+      ],
+      "answer": "The segment with the largest proportional sales increase (excluding Embedded) was the **Data\u202fCenter** segment, whose revenue grew about **64\u202f%** from FY\u202f2021 to FY\u202f2022, compared with a 21\u202f% rise in Gaming and a 10\u202f% decline in Client revenue\u3010AMD_2022_10K p.43\u3011.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 43
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 75
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 67
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 48
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 49
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 170.35009997198358,
+        "rerank": 0.0,
+        "llm": 1747.971199976746,
+        "total": 1918.4528000187129
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.25,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_00566",
+      "question": "Has Verizon increased its debt on balance sheet between 2022 and the 2021 fiscal period?",
+      "gold_answer": "No. Verizon's debt decreased by $229 million.",
+      "doc_id": "VERIZON_2022_10K",
+      "gold_pages": [
+        77
+      ],
+      "answer": "Yes. Verizon\u2019s balance\u2011sheet debt grew from 2021 to 2022.\n\n* The total finance\u2011lease liabilities rose from\u202f$1,325\u202fmillion in 2021 to\u202f$1,732\u202fmillion in 2022, an increase of $407\u202fmillion\u3010VERIZON_2022_10K p.75\u3011.  \n* The average debt outstanding reported in the interest\u2011cost table increased from\u202f$147,035\u202fmillion in 2021 to\u202f$151,226\u202fmillion in 2022\u3010VERIZON_2022_10K p.25\u3011.\n\nBoth figures show a higher debt balance in 2022 than in the prior fiscal year, indicating that Verizon increased its debt on the balance sheet.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 18
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 68
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 77
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 75
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 25
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 167.12749999715015,
+        "rerank": 0.0,
+        "llm": 7.465700036846101,
+        "total": 174.75010000634938
+      },
+      "generation_source": "cache",
+      "recall": 1.0,
+      "mrr": 0.3333333333333333,
+      "correct": false,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_00585",
+      "question": "How does Boeing's effective tax rate in FY2022 compare to FY2021?",
+      "gold_answer": "Effective tax rate in FY2022 was 0.62%, compared to  -14.76% in FY2021.",
+      "doc_id": "BOEING_2022_10K",
+      "gold_pages": [
+        55
+      ],
+      "answer": "**Effective income tax rate**\n\n- FY\u202f2022: **\u20110.6\u202f%** (a tax benefit)\u3010BOEING_2022_10K p.24\u3011  \n- FY\u202f2021: **14.8\u202f%**\u3010BOEING_2022_10K p.24\u3011\n\n**Comparison**\n\n1. Subtract the FY\u202f2022 rate from the FY\u202f2021 rate:  \n   \\(14.8\\% - (-0.6\\%) = 14.8\\% + 0.6\\% = 15.4\\%\\)\n\n2. The effective tax rate fell by **15.4 percentage points** from FY\u202f2021 to FY\u202f2022.\n\n**Result:** Boeing\u2019s effective tax rate moved from a positive 14.8\u202f% in FY\u202f2021 to a negative\u202f\u20110.6\u202f% in FY\u202f2022, a decrease of 15.4\u202fpercentage points.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 77
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 79
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 24
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 76
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 145
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 167.39590000361204,
+        "rerank": 0.0,
+        "llm": 6.894899997860193,
+        "total": 174.50150003423914
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.08333333333333333,
+      "correct": false,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_00720",
+      "question": "What drove gross margin change as of the FY2022 for American Express? If gross margin is not a useful metric for a company like this, then please state that and explain why.",
+      "gold_answer": "Performance is not measured through gross margin",
+      "doc_id": "AMERICANEXPRESS_2022_10K",
+      "gold_pages": [
+        96
+      ],
+      "answer": "American\u202fExpress does not report a traditional \u201cgross margin\u201d figure in its 2022 Form\u202f10\u2011K. The filing breaks out revenue into **non\u2011interest revenues** ($8,262\u202fmillion) and **interest income** ($1,453\u202fmillion) and then presents **total revenues net of interest expense** ($9,061\u202fmillion) and **total expenses** ($7,899\u202fmillion)\u202f[AMERICANEXPRESS_2022_10K p.60]. It also reports **provisions for credit losses** ($584\u202fmillion) and **net interest income** ($799\u202fmillion)\u202f[AMERICANEXPRESS_2022_10K p.60]. Because the company\u2019s business model is that of a financial services firm\u2014earning fees, interest, and other financial income rather than selling physical goods\u2014there is no cost\u2011of\u2011goods\u2011sold line from which a conventional gross profit or gross\u2011margin percentage can be derived.\n\nTherefore, gross margin is not a useful metric for evaluating American\u202fExpress. Instead, analysts focus on metrics that reflect the company\u2019s core drivers, such as:\n\n* **Non\u2011interest revenue growth** (up $1,501\u202fmillion,\u202f+22\u202f% YoY)\u202f[AMERICANEXPRESS_2022_10K p.60]  \n* **Net interest income** (up $125\u202fmillion,\u202f+19\u202f% YoY)\u202f[AMERICANEXPRESS_2022_10K p.60]  \n* **Provisions for credit losses** (down $150\u202fmillion,\u202f\u201120\u202f% YoY)\u202f[AMERICANEXPRESS_2022_10K p.60]  \n* **Total expenses** (up $1,350\u202fmillion,\u202f+21\u202f% YoY)\u202f[AMERICANEXPRESS_2022_10K p.60]\n\nThese items explain the change in profitability for FY\u202f2022 rather than a conventional gross\u2011margin calculation.",
+      "citations": [
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 60
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 50
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 118
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 60
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 118
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 57
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 168.7182000023313,
+        "rerank": 0.0,
+        "llm": 0.3966999938711524,
+        "total": 169.34839996974915
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.14285714285714285,
+      "correct": true,
+      "faithfulness": 0.6
+    },
+    {
+      "id": "financebench_id_00757",
+      "question": "Did AMD report customer concentration in FY22?",
+      "gold_answer": "Yes, one customer accounted for 16% of consolidated net revenue",
+      "doc_id": "AMD_2022_10K",
+      "gold_pages": [
+        12
+      ],
+      "answer": "Yes. AMD disclosed that one customer accounted for 16\u202f% of its consolidated net revenue for the year ended December\u202f31,\u202f2022, indicating a concentration risk.\u202f[AMD_2022_10K p.12]",
+      "citations": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 12
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 12
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 102
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 3
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 102
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 102
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 168.158000044059,
+        "rerank": 0.0,
+        "llm": 1215.198900026735,
+        "total": 1383.4813999710605
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 1.0,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_00790",
+      "question": "Is CVS Health a capital-intensive business based on FY2022 data?",
+      "gold_answer": "Yes, CVS Health requires an extensive asset base to operate, which is evident from its ROA of only 1.82% in 2022 and 3.39% in 2021, though it should be noted that a significant portion of this asset base is goodwill, and CVS's fixed assets/total assets ratio is on the lower side of 5.6%.",
+      "doc_id": "CVSHEALTH_2022_10K",
+      "gold_pages": [
+        108,
+        110
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 139
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 137
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 89
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 27
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 113
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 177.11500002769753,
+        "rerank": 0.0,
+        "llm": 2226.3881000108086,
+        "total": 2403.616600029636
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.1111111111111111,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_00799",
+      "question": "Has AMCOR's quick ratio improved or declined between FY2023 and FY2022? If the quick ratio is not something that a financial analyst would ask about a company like this, then state that and explain why.",
+      "gold_answer": "The quick ratio has slightly improved from 0.67 times to 0.69 times between FY 2023 and FY 2022.(3.4% jump)",
+      "doc_id": "AMCOR_2023_10K",
+      "gold_pages": [
+        52
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 87
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 86
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 2
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 74
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 35
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 168.70650002965704,
+        "rerank": 0.0,
+        "llm": 2.520899986848235,
+        "total": 171.37160000856966
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_00859",
+      "question": "Among all of the derivative instruments that Verizon used to manage the exposure to fluctuations of foreign currencies exchange rates or interest rates, which one had the highest notional value in FY 2021?",
+      "gold_answer": "Cross currency swaps. Its notional value was $32,502 million.",
+      "doc_id": "VERIZON_2021_10K",
+      "gold_pages": [
+        85
+      ],
+      "answer": "The derivative instrument with the largest notional amount in fiscal\u202f2021 was **cross\u2011currency swaps**, with a notional value of **$32,502\u202fmillion**\u202f[VERIZON_2021_10K p.85]. This amount exceeds the notional values of the other listed derivatives (interest\u2011rate swaps $19,779\u202fmillion, forward\u2011starting swaps $1,000\u202fmillion, foreign\u2011exchange forwards $932\u202fmillion, and the additional foreign\u2011exchange forwards entered into $12,604\u202fmillion).",
+      "citations": [
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 85
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 85
+        },
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 63
+        },
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 85
+        },
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 87
+        },
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 87
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 173.22759999660775,
+        "rerank": 0.0,
+        "llm": 0.40120002813637257,
+        "total": 173.87469997629523
+      },
+      "generation_source": "cache",
+      "recall": 1.0,
+      "mrr": 1.0,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_00917",
+      "question": "What drove operating margin change as of the FY22 for AMD? If operating margin is not a useful metric for a company like this, then please state that and explain why.",
+      "gold_answer": "The decrease in AMD's operating income was primarily driven by amortization of intangible assets associated with the Xilinx acquisition",
+      "doc_id": "AMD_2022_10K",
+      "gold_pages": [
+        43
+      ],
+      "answer": "**What drove the change in AMD\u2019s operating margin for FY\u202f2022?**  \n\nThe FY\u202f2022 operating margin fell because the company\u2019s operating income was squeezed by several cost increases that were not offset by the growth in net revenue:\n\n| Item (FY\u202f2022) | FY\u202f2021 | Effect on operating margin |\n|----------------|---------|----------------------------|\n| **Net revenue** grew to **$23,601\u202fmillion** from **$16,434\u202fmillion** (+45\u202f%)\u3010AMD_2022_10K p.49\u3011. |  | Higher revenue would normally lift margin, but\u2026 |\n| **Amortization of acquisition\u2011related intangibles** rose to **$2,100\u202fmillion** (there was none in FY\u202f2021)\u3010AMD_2022_10K p.49\u3011. | $0 | This new expense directly reduces operating income. |\n| **Research & development** expense increased to **$5,005\u202fmillion** from **$2,845\u202fmillion**\u3010AMD_2022_10K p.49\u3011. | $2,845\u202fmillion | Higher R&D costs lower operating income. |\n| **Marketing, general & administrative** expense rose to **$2,336\u202fmillion** from **$1,448\u202fmillion**\u3010AMD_2022_10K p.49\u3011. | $1,448\u202fmillion | Higher SG&A also drags down operating income. |\n| **Licensing gain** turned negative, a **$(102)\u202fmillion** loss versus a **$(12)\u202fmillion** loss in FY\u202f2021\u3010AMD_2022_10K p.49\u3011. | $(12)\u202fmillion | A larger loss further reduces operating income. |\n| **Gross margin** fell from **48\u202f%** to **45\u202f%** because of the new amortization expense\u3010AMD_2022_10K p.49\u3011. | 48\u202f% | Lower gross profit per dollar of revenue also hurts operating margin. |\n\nPutting these together, the additional **$2.1\u202fbillion** of amortization (the primary driver noted by management) plus the **$2.2\u202fbillion** increase in R&D and the **$0.9\u202fbillion** rise in SG&A created a sizable rise in operating expenses that outpaced the revenue growth, resulting in a lower operating margin for FY\u202f2022.\n\n---\n\n**Is operating margin a useful metric for AMD?**  \n\nOperating margin can be less informative for a company like AMD because a substantial portion of its operating results is driven by **non\u2011recurring or acquisition\u2011related items** that are not part of the core manufacturing business:\n\n* The **amortization of acquisition\u2011related intangibles** (e.g., from the Xilinx purchase) added **$2,100\u202fmillion** of expense in FY\u202f2022, a cost that will decline over time as the intangibles are amortized\u3010AMD_2022_10K p.49\u3011.  \n* **Stock\u2011based compensation** and **acquisition\u2011related costs** are reported in an \u201cAll Other\u201d operating loss of **$4,979\u202fmillion** for FY\u202f2022\u3010AMD_2022_10K p.68\u3011, which are accounting charges rather than cash operating costs.  \n* The company does not allocate assets to its operating segments, and its performance is evaluated by the CODM using **segment net revenue and operating income** rather than a single consolidated operating\u2011margin figure\u3010AMD_2022_10K p.67\u3011.\n\nBecause these items can cause large swings in operating income that are unrelated to the underlying profitability of AMD\u2019s core semiconductor products, **operating margin alone may not fully reflect the company\u2019s operating health**. Analysts typically look at **gross margin**, **adjusted EBITDA**, or **segment\u2011level operating results** to get a clearer picture.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 46
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 49
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 67
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 68
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 14
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 175.39460002444685,
+        "rerank": 0.0,
+        "llm": 7.993899984285235,
+        "total": 183.5914999828674
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.16666666666666666,
+      "correct": true,
+      "faithfulness": 0.8
+    },
+    {
+      "id": "financebench_id_00995",
+      "question": "What are the major products and services that AMD sells as of FY22?",
+      "gold_answer": "AMD sells server microprocessors (CPUs) and graphics processing units (GPUs), data processing units (DPUs), Field Programmable Gate Arrays (FPGAs), and Adaptive System-on-Chip (SoC) products for data centers; CPUs, accelerated processing units (APUs) that integrate CPUs and GPUs, and chipsets for desktop and notebook personal computers; discrete GPUs, and semi-custom SoC products and development services; and embedded CPUs, GPUs, APUs, FPGAs, and Adaptive SoC products.",
+      "doc_id": "AMD_2022_10K",
+      "gold_pages": [
+        4
+      ],
+      "answer": "AMD\u2019s FY\u201122 portfolio is centered on a broad set of processor, graphics, chipset and data\u2011center offerings:\n\n* **Client\u2011processor family** \u2013 AMD\u202fRyzen, Ryzen\u202fPRO, Ryzen\u202fThreadripper, Threadripper\u202fPRO, Athlon, Athlon\u202fPRO and AMD\u202fPRO\u202fA\u2011Series processors for desktop and notebook PCs\u202f[AMD_2022_10K p.11].\n\n* **Graphics brands** \u2013  \n  * Consumer graphics: **AMD Radeon** graphics.  \n  * Embedded graphics: **AMD Embedded Radeon** graphics.  \n  * Professional graphics: **AMD Radeon\u202fPRO** graphics.  \n  * Data\u2011center graphics: **Radeon\u202fInstinct**, **Radeon\u202fPRO\u202fV\u2011series** and **AMD\u202fInstinct** accelerators for servers\u202f[AMD_2022_10K p.11].\n\n* **Chipsets** \u2013 sold under the AMD trademark\u202f[AMD_2022_10K p.11].\n\n* **Server\u2011microprocessor brand** \u2013 **AMD\u202fEPYC** processors\u202f[AMD_2022_10K p.11].\n\n* **Embedded\u2011processor solutions** \u2013 low\u2011power versions of AMD\u202fAthlon, plus **AMD\u202fGeode\u2122, AMD\u202fRyzen, AMD\u202fEPYC, AMD\u202fR\u2011Series and G\u2011Series** processors\u202f[AMD_2022_10K p.11].\n\n* **Data\u2011center products** \u2013  \n  * **Server CPUs**: AMD\u202fEPYC\u202f9004\u202fSeries (Zen\u202f4), EPYC\u202f7003\u202fSeries and EPYC\u202f7002\u202fSeries\u202f[AMD_2022_10K p.7].  \n  * **FPGAs and Adaptive SoCs**: Virtex\u2122, Kintex\u2122 FPGA families; Zynq\u2122, Zynq\u202fMPSoC and Versal\u2122 Adaptive SoC products\u202f[AMD_2022_10K p.7].  \n  * **Alveo accelerator cards** for accelerating workloads in the data center, edge or cloud\u202f[AMD_2022_10K p.7].\n\nTogether, these processor, graphics, chipset, embedded and data\u2011center hardware families constitute AMD\u2019s major products and services as of FY\u202f2022.",
+      "citations": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 11
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 7
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 11
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 62
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 7
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 60
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 3
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 164.35050003929064,
+        "rerank": 0.0,
+        "llm": 2871.7628000304103,
+        "total": 3036.2806999473833
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.1111111111111111,
+      "correct": false,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_01009",
+      "question": "What are the geographies that Pepsico primarily operates in as of FY2022?",
+      "gold_answer": "As of FY2022, Pepsico primarily operates in the following geographies: North America, Latin America, Europe, Africa, Middle East, South Asia, Asia Pacific, Australia, New Zealand and China.",
+      "doc_id": "PEPSICO_2022_10K",
+      "gold_pages": [
+        4,
+        5
+      ],
+      "answer": "PepsiCo operates as a truly global business.\u202fIn FY\u202f2022 the company served customers and consumers in **more than\u202f200\u202fcountries and territories worldwide**\u202f[PEPSICO_2022_10K p.32].\u202fIts research and development footprint spans many key regions, with centers located in **Brazil, China, India, Ireland, Mexico, Russia, South\u202fAfrica, the United Kingdom and the United States**\u202f[PEPSICO_2022_10K p.10].",
+      "citations": [
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 32
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 10
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 32
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 207
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 10
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 301
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 26
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 179.4643999892287,
+        "rerank": 0.0,
+        "llm": 1393.4997999458574,
+        "total": 1573.2647000113502
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.07692307692307693,
+      "correct": false,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_01091",
+      "question": "Has Boeing reported any materially important ongoing legal battles from FY2022?",
+      "gold_answer": "Yes. Multiple lawsuits have been filed against Boeing resulting from a 2018 Lion Air crash and a 2019 Ethiopian Airlines crash.",
+      "doc_id": "BOEING_2022_10K",
+      "gold_pages": [
+        113
+      ],
+      "answer": "Yes. In its FY\u202f2022 Form\u202f10\u2011K Boeing disclosed that a number of material legal proceedings were still pending.\u202fNote\u202f21 states that \u201cVarious legal proceedings, claims and investigations \u2026 are pending against us\u201d and that the company \u201ccannot reasonably estimate a range of loss, if any, not covered by available insurance\u201d for those matters\u202f[BOEING_2022_10K p.112].\u202fThe filing also details specific, high\u2011profile actions related to the 737\u202fMAX accidents\u2014including a Deferred Prosecution Agreement, a shareholder derivative settlement, and an SEC civil\u2011penalty settlement\u2014indicating ongoing, materially important legal battles\u202f[BOEING_2022_10K p.113].",
+      "citations": [
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 112
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 113
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 112
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 4
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 113
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 8
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 73
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 172.0971000031568,
+        "rerank": 0.0,
+        "llm": 1935.8333999989554,
+        "total": 2108.1370000028983
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.3333333333333333,
+      "correct": true,
+      "faithfulness": 0.6
+    },
+    {
+      "id": "financebench_id_01107",
+      "question": "Has CVS Health reported any materially important ongoing legal battles from 2022, 2021 and 2020?",
+      "gold_answer": "Yes, CVS Health has been involved in multiple ongoing legal battles. Some notable legal dispute areas for CVS are: (1) usual and customary pricing litigation: where it's claimed that CVS\u00e2\u0080\u0099s retail pharmacies overcharged for prescription drugs; (2) PBM litigation and investigations: where it's claimed that that rebate agreements between the drug manufacturers and PBMs caused inflated prices for certain drug products; and (3) controlled substances litigation: legal matters around opioids for which CVS has agreed to pay up to $4.3 billion to claimants in remediation and $625 million to attorneys and fees",
+      "doc_id": "CVSHEALTH_2022_10K",
+      "gold_pages": [
+        173,
+        174
+      ],
+      "answer": "Yes.\u202fCVS\u202fHealth disclosed that it is still facing material legal matters in each of those years.\u202fIn its 2022 filing the company states that, because of the many uncertainties surrounding settlement arrangements and other resolutions of all opioid\u2011related litigation, it cannot reasonably estimate the ultimate loss range and that these matters could have a material effect on its business, financial condition, results of operations and cash flows\u202f[CVSHEALTH_2022_10K p.175].\u202fThe filing also notes that the Department of Justice issued a DEA administrative subpoena in January\u202f2020 and a CID in January\u202f2022 related to prescription\u2011opioid practices, which the company is responding to\u202f[CVSHEALTH_2022_10K p.175].\u202fAdditionally, the 2022 filing records opioid\u2011litigation charges for 2022 that relate to agreements to resolve substantially all opioid claims against the company\u202f[CVSHEALTH_2022_10K p.80].  \n\nThus, CVS\u202fHealth reported materially important ongoing legal battles for 2022, 2021 and 2020.",
+      "citations": [
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 175
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 80
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 175
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 178
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 80
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 77
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 45
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 179.6697999816388,
+        "rerank": 0.0,
+        "llm": 1491.8628999730572,
+        "total": 1671.7830000561662
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": true,
+      "faithfulness": 0.7142857142857143
+    },
+    {
+      "id": "financebench_id_01148",
+      "question": "What industry does AMCOR primarily operate in?",
+      "gold_answer": "Amcor is a global leader in packaging production for various use cases.",
+      "doc_id": "AMCOR_2023_10K",
+      "gold_pages": [
+        5
+      ],
+      "answer": "Amcor primarily operates in the **packaging industry**, producing responsible packaging for food, beverage, pharmaceutical, medical, home and personal\u2011care, and other consumer\u2011goods end markets\u3010AMCOR_2023_10K p.14\u3011.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "AMCOR_2020_10K",
+          "page": 10
+        },
+        {
+          "doc_id": "AMCOR_2020_10K",
+          "page": 25
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 14
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 55
+        },
+        {
+          "doc_id": "AMCOR_2020_10K",
+          "page": 141
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 162.56369999609888,
+        "rerank": 0.0,
+        "llm": 0.40310004260390997,
+        "total": 163.06799999438226
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.125,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_01226",
+      "question": "What drove operating margin change as of FY2022 for 3M? If operating margin is not a useful metric for a company like this, then please state that and explain why.",
+      "gold_answer": "Operating Margin for 3M in FY2022 has decreased by 1.7% primarily due to: \n-Decrease in gross Margin\n-mostly one-off charges including Combat Arms Earplugs litigation, impairment related to exiting PFAS manufacturing, costs related to exiting Russia and divestiture-related restructuring\ncharges",
+      "doc_id": "3M_2022_10K",
+      "gold_pages": [
+        27
+      ],
+      "answer": "The decline in 3M\u2019s operating\u2011income margin in FY\u202f2022 (down to **19.1\u202f%** from **20.8\u202f%** in FY\u202f2021) was driven primarily by a set of \u201cspecial items\u201d that were recorded in 2022 and by a change in the way the company measures segment operating performance.\n\n**1. Special items that reduced operating income in 2022**\n\n| Special item (2022) | Effect on operating income (millions) |\n|---------------------|----------------------------------------|\n| Net costs for significant litigation | **$1,414\u202fM** (negative) |\n| PFAS manufacturing exit costs | **$800\u202fM** (negative) |\n| Gain on business divestitures | **$(2,724)\u202fM** (negative) |\n| Russia exit charges | **$109\u202fM** (negative) |\n| Other divestiture\u2011related items (restructuring, costs) | small net impact |\n\nThese items are listed in the \u201cAdjustments for special items\u201d section of the GAAP income statement for FY\u202f2022\u202f[3M_2022_10K p.24]. The net effect of the special items was a **$577\u202fM** reduction in operating income (shown as \u201cTotal special items\u201d\u202f$577\u202fM)\u202f[3M_2022_10K p.24]. Because operating margin is operating income divided by total revenue, this reduction directly lowered the margin from 20.8\u202f% (2021) to 19.1\u202f% (2022).\n\n**2. Change in segment\u2011operating\u2011performance measurement**\n\nEffective in the first quarter of 2022, 3M eliminated the inclusion of \u201cdual credit\u201d from its segment operating\u2011performance metric and updated the definition of business\u2011segment operating income\u202f[3M_2022_10K p.121]. This accounting change was applied retroactively to all comparative periods\u202f[3M_2022_10K p.28]. The new measurement aligns with how the chief operating decision maker (CODM) assesses performance, but it also altered the composition of operating income reported for the segment, contributing to the margin shift.\n\n**3. Other contributing factors**\n\n* The company recorded a **$60\u202fM** divestiture cost, **$41\u202fM** divestiture\u2011related restructuring, and **$109\u202fM** Russia\u2011exit charge, all of which further reduced operating income\u202f[3M_2022_10K p.24].\n* The PFAS exit costs of **$800\u202fM** were a new, material expense in 2022\u202f[3M_2022_10K p.24].\n\n**Why operating margin may be less useful for 3M**\n\n3M\u2019s financial reporting emphasizes **business\u2011segment operating income** (a non\u2011GAAP measure) and provides extensive adjustments for \u201cspecial items\u201d that are excluded from the segment metric\u202f[3M_2022_10K p.121]. Because a sizable portion of the change in operating margin stems from one\u2011time or non\u2011recurring items (litigation settlements, PFAS exit costs, divestiture gains/losses, and the accounting change to segment reporting), the raw operating\u2011margin figure can obscure the underlying performance of the ongoing business. Investors therefore rely more on the adjusted, segment\u2011level operating income and the non\u2011GAAP margins that strip out these special items to gauge sustainable profitability.",
+      "citations": [
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 24
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 121
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 28
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 121
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 24
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 28
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 20
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 22
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 173.12049999600276,
+        "rerank": 0.0,
+        "llm": 0.42129994835704565,
+        "total": 173.69670001789927
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.14285714285714285,
+      "correct": true,
+      "faithfulness": 0.95
+    },
+    {
+      "id": "financebench_id_01279",
+      "question": "Among operations, investing, and financing activities, which brought in the most (or lost the least) cash flow for AMD in FY22?",
+      "gold_answer": "In 2022, AMD brought in the most cashflow from Operations",
+      "doc_id": "AMD_2022_10K",
+      "gold_pages": [
+        58
+      ],
+      "answer": "In fiscal\u202f2022 AMD\u2019s cash\u2011flow statement shows:\n\n* **Operating activities** generated a net cash inflow of **$3,565\u202fmillion**\u3010AMD_2022_10K p.58\u3011.  \n* **Investing activities** generated a net cash inflow of **$1,999\u202fmillion**\u3010AMD_2022_10K p.58\u3011.  \n* **Financing activities** resulted in a net cash outflow of **$3,264\u202fmillion**\u3010AMD_2022_10K p.58\u3011.\n\nTherefore, among the three categories, **operating activities brought in the most cash (the highest net cash inflow) for AMD in FY\u202f2022**.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 51
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 59
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 52
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 52
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 58
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 169.17789995204657,
+        "rerank": 0.0,
+        "llm": 53.977200004737824,
+        "total": 223.2963999849744
+      },
+      "generation_source": "cache",
+      "recall": 1.0,
+      "mrr": 0.2,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_01351",
+      "question": "How much has the effective tax rate of American Express changed between FY2021 and FY2022?",
+      "gold_answer": "The effective tax rate for American Express has changed/dropped from 24.6% in FY 2021 to 21.6% in FY 2022.",
+      "doc_id": "AMERICANEXPRESS_2022_10K",
+      "gold_pages": [
+        44
+      ],
+      "answer": "The 10\u2011K states that the effective tax rate was **21.6\u202f% for 2022** and **24.6\u202f% for 2021**\u3010AMERICANEXPRESS_2022_10K p.49\u3011.\n\n**Calculation**\n\n1. Effective tax rate FY\u202f2022 = 21.6\u202f%  \n2. Effective tax rate FY\u202f2021 = 24.6\u202f%  \n3. Change = 21.6\u202f%\u202f\u2212\u202f24.6\u202f% = **\u20113.0\u202fpercentage points**\n\n**Answer:** The effective tax rate decreased by 3.0 percentage points from FY\u202f2021 to FY\u202f2022.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 49
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 146
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 148
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 146
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 37
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 166.39710002345964,
+        "rerank": 0.0,
+        "llm": 0.39499998092651367,
+        "total": 166.9798999791965
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_01981",
+      "question": "Was American Express able to retain card members during 2022?",
+      "gold_answer": "Yes",
+      "doc_id": "AMERICANEXPRESS_2022_10K",
+      "gold_pages": [
+        45
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 117
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 7
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 108
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 102
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 4
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 161.5204000263475,
+        "rerank": 0.0,
+        "llm": 826.3828000053763,
+        "total": 988.00900002243
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_02608",
+      "question": "In agreement with the information outlined in the income statement, what is the FY2015 - FY2017 3 year average net profit margin (as a %) for Best Buy? Answer in units of percents and round to one decimal place.",
+      "gold_answer": "2.8%",
+      "doc_id": "BESTBUY_2017_10K",
+      "gold_pages": [
+        56
+      ],
+      "answer": "**Step\u2011by\u2011step calculation**\n\n| Fiscal year | Net earnings attributable to Best\u202fBuy shareholders (US$\u202fmillions) | Revenue (US$\u202fmillions) | Net profit margin = Net earnings \u00f7 Revenue |\n|-------------|--------------------------------------------------------------------|------------------------|--------------------------------------------|\n| 2015 | 1,233 | 40,339 | 1,233\u202f\u00f7\u202f40,339 = 0.03056 \u2192 **3.1\u202f%** |\n| 2016 |   897 | 39,528 | 897\u202f\u00f7\u202f39,528 = 0.02268 \u2192 **2.3\u202f%** |\n| 2017 | 1,228 | 39,403 | 1,228\u202f\u00f7\u202f39,403 = 0.03117 \u2192 **3.1\u202f%** |\n\n*Sources:* Net earnings attributable to Best\u202fBuy shareholders and revenue for 2015\u20112017 are taken from the Consolidated Performance Summary table\u3010BESTBUY_2017_10K p.31\u3011.\n\n**Average net profit margin over the three\u2011year period**\n\n\\[\n\\text{Average margin} = \\frac{3.1\\% + 2.3\\% + 3.1\\%}{3}\n= \\frac{8.5\\%}{3}\n= 2.8\\%\n\\]\n\nRounded to one decimal place, the FY\u202f2015\u2011FY\u202f2017 three\u2011year average net profit margin is **2.8\u202f%**.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "BESTBUY_2017_10K",
+          "page": 31
+        },
+        {
+          "doc_id": "BESTBUY_2017_10K",
+          "page": 81
+        },
+        {
+          "doc_id": "BESTBUY_2017_10K",
+          "page": 56
+        },
+        {
+          "doc_id": "BESTBUY_2017_10K",
+          "page": 91
+        },
+        {
+          "doc_id": "BESTBUY_2017_10K",
+          "page": 37
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 171.15609999746084,
+        "rerank": 0.0,
+        "llm": 8.432100003119558,
+        "total": 179.78149995906278
+      },
+      "generation_source": "cache",
+      "recall": 1.0,
+      "mrr": 0.3333333333333333,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_03069",
+      "question": "Answer the following question as if you are an equity research analyst and have lost internet connection so you do not have access to financial metric providers. According to the details clearly outlined within the P&L statement and the statement of cash flows, what is the FY2015 depreciation and amortization (D&A from cash flow statement) % margin for AMD?",
+      "gold_answer": "4.2%",
+      "doc_id": "AMD_2015_10K",
+      "gold_pages": [
+        56,
+        60
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "AMD_2015_10K",
+          "page": 43
+        },
+        {
+          "doc_id": "AMD_2015_10K",
+          "page": 203
+        },
+        {
+          "doc_id": "AMD_2015_10K",
+          "page": 58
+        },
+        {
+          "doc_id": "AMD_2015_10K",
+          "page": 132
+        },
+        {
+          "doc_id": "AMD_2015_10K",
+          "page": 60
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 171.42520000925288,
+        "rerank": 0.0,
+        "llm": 0.4056000034324825,
+        "total": 172.15380002744496
+      },
+      "generation_source": "cache",
+      "recall": 1.0,
+      "mrr": 0.2,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_03856",
+      "question": "What is the FY2017 operating cash flow ratio for Adobe? Operating cash flow ratio is defined as: cash from operations / total current liabilities. Round your answer to two decimal places. Please utilize information provided primarily within the balance sheet and the cash flow statement.",
+      "gold_answer": "0.83",
+      "doc_id": "ADOBE_2017_10K",
+      "gold_pages": [
+        57,
+        61
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "ADOBE_2017_10K",
+          "page": 77
+        },
+        {
+          "doc_id": "ADOBE_2017_10K",
+          "page": 40
+        },
+        {
+          "doc_id": "ADOBE_2017_10K",
+          "page": 75
+        },
+        {
+          "doc_id": "ADOBE_2017_10K",
+          "page": 49
+        },
+        {
+          "doc_id": "ADOBE_2017_10K",
+          "page": 61
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 173.97409997647628,
+        "rerank": 0.0,
+        "llm": 0.39379997178912163,
+        "total": 174.50959997950122
+      },
+      "generation_source": "cache",
+      "recall": 1.0,
+      "mrr": 0.2,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_03882",
+      "question": "What is Amcor's year end FY2020 net AR (in USD millions)? Address the question by adopting the perspective of a financial analyst who can only use the details shown within the balance sheet.",
+      "gold_answer": "$1616.00",
+      "doc_id": "AMCOR_2020_10K",
+      "gold_pages": [
+        50
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "AMCOR_2020_10K",
+          "page": 77
+        },
+        {
+          "doc_id": "AMCOR_2020_10K",
+          "page": 61
+        },
+        {
+          "doc_id": "AMCOR_2020_10K",
+          "page": 96
+        },
+        {
+          "doc_id": "AMCOR_2020_10K",
+          "page": 38
+        },
+        {
+          "doc_id": "AMCOR_2020_10K",
+          "page": 141
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 170.78139999648556,
+        "rerank": 0.0,
+        "llm": 0.4068000125698745,
+        "total": 171.30569997243583
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.14285714285714285,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_04672",
+      "question": "Assume that you are a public equities analyst. Answer the following question by primarily using information that is shown in the balance sheet: what is the year end FY2018 net PPNE for 3M? Answer in USD billions.",
+      "gold_answer": "$8.70",
+      "doc_id": "3M_2018_10K",
+      "gold_pages": [
+        58
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "3M_2018_10K",
+          "page": 98
+        },
+        {
+          "doc_id": "3M_2018_10K",
+          "page": 45
+        },
+        {
+          "doc_id": "3M_2018_10K",
+          "page": 104
+        },
+        {
+          "doc_id": "3M_2018_10K",
+          "page": 102
+        },
+        {
+          "doc_id": "3M_2018_10K",
+          "page": 84
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 176.2184000108391,
+        "rerank": 0.0,
+        "llm": 0.464299984741956,
+        "total": 176.8199999933131
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_04735",
+      "question": "You are an investment banker and your only resource(s) to answer the following question is (are): the statement of financial position and the cash flow statement. Here's the question: what is the FY2015 operating cash flow ratio for Adobe? Operating cash flow ratio is defined as: cash from operations / total current liabilities. Round your answer to two decimal places.",
+      "gold_answer": "0.66",
+      "doc_id": "ADOBE_2015_10K",
+      "gold_pages": [
+        59,
+        63
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "ADOBE_2015_10K",
+          "page": 78
+        },
+        {
+          "doc_id": "ADOBE_2015_10K",
+          "page": 79
+        },
+        {
+          "doc_id": "ADOBE_2015_10K",
+          "page": 72
+        },
+        {
+          "doc_id": "ADOBE_2015_10K",
+          "page": 53
+        },
+        {
+          "doc_id": "ADOBE_2015_10K",
+          "page": 73
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 178.2649999950081,
+        "rerank": 0.0,
+        "llm": 0.40089996764436364,
+        "total": 178.83900000015274
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.16666666666666666,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_07507",
+      "question": "What is Adobe's year-over-year change in unadjusted operating income from FY2015 to FY2016 (in units of percents and round to one decimal place)? Give a solution to the question by using the income statement.",
+      "gold_answer": "65.4%",
+      "doc_id": "ADOBE_2016_10K",
+      "gold_pages": [
+        62
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "ADOBE_2016_10K",
+          "page": 51
+        },
+        {
+          "doc_id": "ADOBE_2016_10K",
+          "page": 98
+        },
+        {
+          "doc_id": "ADOBE_2016_10K",
+          "page": 94
+        },
+        {
+          "doc_id": "ADOBE_2016_10K",
+          "page": 47
+        },
+        {
+          "doc_id": "ADOBE_2016_10K",
+          "page": 40
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 172.41790000116453,
+        "rerank": 0.0,
+        "llm": 1.8100999877788126,
+        "total": 174.36760000418872
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.09090909090909091,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_10285",
+      "question": "We need to calculate a financial metric by using information only provided within the balance sheet. Please answer the following question: what is Boeing's year end FY2018 net property, plant, and equipment (in USD millions)?",
+      "gold_answer": "$12645.00",
+      "doc_id": "BOEING_2018_10K",
+      "gold_pages": [
+        52
+      ],
+      "answer": "Boeing\u2019s net property, plant and equipment at the end of FY\u202f2018 was **$12,645\u202fmillion**\u3010BOEING_2018_10K p.85\u3011.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 53
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 85
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 24
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 64
+        },
+        {
+          "doc_id": "BOEING_2018_10K",
+          "page": 101
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 173.75959997298196,
+        "rerank": 0.0,
+        "llm": 0.4123999970033765,
+        "total": 174.3115999852307
+      },
+      "generation_source": "cache",
+      "recall": 0.0,
+      "mrr": 0.05263157894736842,
+      "correct": true,
+      "faithfulness": 1.0
+    }
+  ]
+}

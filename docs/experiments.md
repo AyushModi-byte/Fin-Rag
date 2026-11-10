@@ -13,6 +13,7 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 | 6 | | Parent-page expansion for generation | | | | | | |
 | 7 | | Numeric-reasoning prompt | | | | | | |
 | 8 | 2026-11-10 | Router year parsing: FY22 two-digit years + latest year when several are named (from the failure analysis; on top of exp 1) | 0.310 | 0.153 | 0.517 | 0.904 (n=19) | 2002 ms | keep |
+| 9 | 2026-11-10 | Drop chunks under 15 tokens at retrieval (`retrieval.min_chunk_tokens: 0 -> 15`; from the failure analysis; on top of exp 8) | 0.345 | 0.196 | 0.517 | 0.909 (n=19) | 1672 ms | keep |
 
 ### Baseline notes (row 0)
 
@@ -45,6 +46,13 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 - Vs experiment 1: recall@5 0.207 -> 0.310 (6/29 -> 9/29), MRR 0.124 -> 0.153, accuracy 0.448 -> 0.517 (13/29 -> 15/29), "I don't know" 12 -> 10. Per question: accuracy gained 2 and lost 0 (ids 00917, 01279, both AMD FY22), recall gained 3 and lost 0. Decision: keep.
 - Latency 2002 ms p50 / 4555 ms p95 is over only the 10 questions whose answer was not already in the disk cache (the other 19 had unchanged context, so their answers were reused); treat as indicative.
 - The offline prototype predicted the year filter would be right for 27 of 29 dev questions (was 15); the retrieval gain is smaller than that headline because many gold pages still rank below the top 5 once the right filing is selected.
+
+### Experiment 9 notes (drop tiny chunks)
+
+- Change: `retrieval.min_chunk_tokens: 0 -> 15` (the setting was added at 0 in its own no-behavior-change commit; the experiment is the one-value flip). The retriever drops dense and BM25 hits under 15 tokens (page numbers, headers) before fusing; tables are never that short. No re-index, no extra LLM calls. Counted run, zero errors: `data/eval/runs/20261110T070512_dev.json`, n=29.
+- Vs experiment 8: recall@5 0.310 -> 0.345 (9/29 -> 10/29), MRR 0.153 -> 0.196, accuracy 0.517 -> 0.517 (15/29 both: gained 00757, lost 00790). Faithfulness 0.904 -> 0.909 (n=19 both). Decision: keep, because recall@5 improved; accuracy did not.
+- Honest size of the effect: recall@5 moved by one question (00757, the AMD customer-concentration question that had page-number chunks in its top 3), so on n=29 this is a small gain; the MRR change (+0.043) is the stronger signal that real pages moved up. The accuracy swap (+1/-1) is within run-to-run noise of the answerer; 00790 had a different context set this time.
+- Latency 1672 ms p50 / 3036 ms p95 is over only the 8 uncached questions (the rest reused cached answers), so it is indicative only.
 
 ## Final (test split, run once)
 
