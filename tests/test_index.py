@@ -120,3 +120,12 @@ def test_load_refuses_index_version_mismatch(cfg, embedder):
     _manifest_path(cfg).write_text(json.dumps(manifest))
     with pytest.raises(IndexMismatchError, match="version"):
         load_index(cfg)
+
+
+def test_embedder_sorting_preserves_input_order(embedder):
+    texts = ["a much longer sentence about revenue and margins " * 3, "short", "medium length text"]
+    embedder.sort_by_length = False
+    plain = embedder.embed(texts)
+    embedder.sort_by_length = True
+    sorted_ = embedder.embed(texts)
+    assert abs(plain - sorted_).max() < 1e-4

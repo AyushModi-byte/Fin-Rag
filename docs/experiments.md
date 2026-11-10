@@ -91,3 +91,21 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 | Date | Index version | Embedding model | Docs | Chunks (dense / BM25) | Build time | Notes |
 |------|---------------|-----------------|------|------------------------|------------|-------|
 | 2026-11-09 | v1 | BAAI/bge-small-en-v1.5 (384-d) | 22 | 15925 / 15925 | 11558.3 s (as reported by the job, includes embedding on CPU; parsed pages reused) | child_tokens 256, overlap 32, context prefix on. Index size 104 MB. Time is far above the ~15 min parse; wall-clock may include machine sleep, not re-measured. |
+
+## Embedding speed (Phase 0, bge-small-en-v1.5, 300 random v1 chunks, Ryzen 7 4800H 8C/16T, no LLM calls)
+
+| Variant | chunks/s |
+|---|---|
+| batch 32 (v1 setting) | 8.4 |
+| batch 64 | 7.3 |
+| batch 8 | 12.9 |
+| batch 32, threads 4 / 8 / 16 | 7.6 / 8.4 / 7.9 |
+| batch 32, fastembed parallel 2 / 4 (1 thread each) | 4.9 / 6.9 |
+| batch 32, length-sorted | 10.7 |
+| batch 32, max_length 256 (truncates; not usable for tables) | 18.0 |
+| sorted, batch 16 / 8 / 4 | 12.6 / 15.4 / 19.2 |
+| sorted, batch 2 | 28.7 |
+| **sorted, batch 1 (applied)** | **30.7** |
+
+- Padding to the longest text in a batch is the cost: smaller batches are faster, threads and data-parallel workers do not help. Applied: `embeddings.batch_size: 1`, `sort_by_length: true` (3.7x faster than v1's setting).
+- At 0.12 s/chunk (batch 32) the v1 build should have taken about 32 min, not 11,558 s (0.73 s/chunk); machine sleep or heavy background load during that build is the likely cause (not re-measured). CPU load during the benchmark was ~23% from other processes (Chrome, Docker), balanced power plan, on battery 96%.
