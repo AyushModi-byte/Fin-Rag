@@ -1,9 +1,12 @@
 """LLMClient: the only place an LLM API is ever called.
 
-Order per request: disk cache (primary, then fallback entries) -> primary provider (throttled,
-retried with exponential backoff on 429/5xx/timeout) -> fallback provider. Every real request
-increments a per-provider daily counter; at `budget_warn_ratio` of `daily_budget` the client stops
-and raises BudgetNearlyExhausted so the user is told before anything else is spent.
+Order per request: disk cache (every configured provider's entry) -> primary provider (throttled,
+retried with exponential backoff on 429/5xx/timeout) -> fallback provider, if one is configured.
+
+A provider may have several API keys. A 429 on one key moves to the next key immediately and puts
+the limited key on a cooldown. Every real request increments a per-key daily counter; a key at
+`budget_warn_ratio` of `daily_budget` is skipped, and when every key is there the client stops and
+raises BudgetNearlyExhausted so the user is told before anything else is spent.
 
 API keys travel only in request headers and are never logged or put in error messages.
 """
@@ -33,7 +36,7 @@ class LLMError(RuntimeError):
 
 
 class BudgetNearlyExhausted(RuntimeError):
-    """A provider reached budget_warn_ratio of its daily call budget; stop and tell the user."""
+    """Every key of a provider reached budget_warn_ratio of its daily budget; stop and tell the user."""
 
 
 class _ProviderFailed(Exception):
@@ -83,7 +86,7 @@ class _Provider:
     model: str
     rpm: float
     daily_budget: int
-    key_env: str
+    key_envs: list[str]
 
 
 def _gemini_request(url_tpl, p, key, prompt, system, cfg):
@@ -133,6 +136,11 @@ _ADAPTERS = {
 }
 
 
+def _key_envs(role) -> list[str]:
+    envs = getattr(role, "api_key_envs", None)
+    return list(envs) if envs else [role.api_key_env]
+
+
 class LLMClient:
     def __init__(
         self,
@@ -146,15 +154,18 @@ class LLMClient:
         self.cfg = cfg
         self._transport, self._sleep, self._clock, self._today = transport, sleep, clock, today
         self.providers = []
-        for role in (cfg.llm.primary, cfg.llm.fallback):
+        for role in (cfg.llm.primary, getattr(cfg.llm, "fallback", None)):
+            if role is None:
+                continue
             if role.provider not in _ADAPTERS:
                 raise ValueError(f"unsupported LLM provider: {role.provider}")
             self.providers.append(
-                _Provider(role.provider, role.model, role.rpm, role.daily_budget, role.api_key_env)
+                _Provider(role.provider, role.model, role.rpm, role.daily_budget, _key_envs(role))
             )
         self._api_keys = api_keys
         self._cache_dir = Path(cfg.llm.cache_dir)
-        self._last_request: dict[str, float] = {}
+        self._last_request: dict[str, float] = {}  # per key env
+        self._cooldown_until: dict[str, float] = {}  # per key env
         self.last_call: LLMCallInfo | None = None
         self.served: Counter = Counter()
 
@@ -174,12 +185,11 @@ class LLMClient:
 
         failures = []
         for i, p in enumerate(providers):
-            key = self._key(p)
-            if not key:
-                failures.append(f"{p.name}: {p.key_env} is not set")
+            if not self._usable_envs(p):
+                failures.append(f"{p.name}: {' / '.join(p.key_envs)} is not set")
                 continue
             try:
-                text = self._call_with_retries(p, key, prompt, system)
+                text = self._call_with_retries(p, prompt, system)
             except _ProviderFailed as e:
                 failures.append(f"{p.name}: {e}")
                 if i + 1 < len(providers):
@@ -191,28 +201,65 @@ class LLMClient:
             return text
         raise LLMError("all providers failed: " + "; ".join(failures))
 
-    # ---- providers ----
+    # ---- keys ----
 
-    def _key(self, p: _Provider) -> str | None:
+    def _key_value(self, env: str) -> str | None:
         keys = self._api_keys if self._api_keys is not None else os.environ
-        value = keys.get(p.key_env)
+        value = keys.get(env)
         return value.strip() if value and value.strip() else None
 
-    def _call_with_retries(self, p, key, prompt, system) -> str:
+    def _usable_envs(self, p: _Provider) -> list[str]:
+        """Configured key env vars that actually have a value."""
+        return [e for e in p.key_envs if self._key_value(e)]
+
+    def _threshold(self, p: _Provider) -> float:
+        return p.daily_budget * self.cfg.llm.budget_warn_ratio
+
+    def _under_budget(self, p: _Provider) -> list[str]:
+        return [e for e in self._usable_envs(p) if self.calls_today(p.name, e) < self._threshold(p)]
+
+    def _is_fresh(self, env: str) -> bool:
+        return self._cooldown_until.get(env, 0.0) <= self._clock()
+
+    def _pick_key(self, p: _Provider) -> str:
+        """Next key to use: first one under budget that is not cooling down; if every eligible key is
+        cooling, the one that cools down soonest. Raises BudgetNearlyExhausted if all are over budget."""
+        eligible = self._under_budget(p)
+        if not eligible:
+            counts = ", ".join(
+                f"{e}={self.calls_today(p.name, e)}/{p.daily_budget}" for e in self._usable_envs(p)
+            )
+            raise BudgetNearlyExhausted(
+                f"{p.name}: every API key has used >= {self.cfg.llm.budget_warn_ratio:.0%} of its daily "
+                f"budget ({counts}). Stopping; tell the user before continuing."
+            )
+        fresh = [e for e in eligible if self._is_fresh(e)]
+        if fresh:
+            return fresh[0]
+        return min(eligible, key=lambda e: self._cooldown_until.get(e, 0.0))
+
+    def _has_other_fresh_key(self, p: _Provider, exclude: str) -> bool:
+        return any(e != exclude and self._is_fresh(e) for e in self._under_budget(p))
+
+    # ---- one provider ----
+
+    def _call_with_retries(self, p: _Provider, prompt: str, system: str | None) -> str:
         build, parse = _ADAPTERS[p.name]
         url_tpl = self.cfg.llm.endpoints.__dict__[p.name]
-        url, headers, payload = build(url_tpl, p, key, prompt, system, self.cfg)
-        attempts = 1 + self.cfg.llm.max_retries
-        reason = "unknown"
-        for attempt in range(attempts):
-            self._check_budget(p)
-            self._throttle(p)
-            self._count_call(p)
-            logger.debug("request provider=%s model=%s attempt=%d/%d", p.name, p.model, attempt + 1, attempts)
+        max_attempts = 1 + self.cfg.llm.max_retries
+        attempts, reason = 0, "unknown"
+        while attempts < max_attempts:
+            env = self._pick_key(p)
+            url, headers, payload = build(url_tpl, p, self._key_value(env), prompt, system, self.cfg)
+            self._throttle(env, p.rpm)
+            self._count_call(p, env)
+            logger.debug(
+                "request provider=%s model=%s key=%s attempt=%d/%d", p.name, p.model, env, attempts + 1, max_attempts
+            )
             try:
                 resp = self._transport(url, headers, payload, self.cfg.llm.timeout_s)
             except OSError as e:  # includes TimeoutError / ConnectionError
-                reason, retryable = type(e).__name__, True
+                reason = type(e).__name__
             else:
                 if resp.status == 200:
                     text = parse(resp.body).strip()
@@ -220,11 +267,16 @@ class LLMClient:
                         return text
                     raise _ProviderFailed("empty response")
                 reason = f"HTTP {resp.status}" + self._error_detail(resp.body)
-                retryable = resp.status in _RETRYABLE_STATUS or resp.status >= 500
-                if not retryable:
+                if resp.status == 429:
+                    self._cooldown_until[env] = self._clock() + self.cfg.llm.key_cooldown_s
+                    if self._has_other_fresh_key(p, env):
+                        logger.warning("%s key %s rate limited; rotating to the next key", p.name, env)
+                        continue  # rotate immediately: no backoff, no attempt used (bounded by key count)
+                elif resp.status not in _RETRYABLE_STATUS and resp.status < 500:
                     raise _ProviderFailed(reason)
-            if attempt + 1 < attempts:
-                self._sleep(self.cfg.llm.backoff_base_s * 2**attempt)
+            attempts += 1
+            if attempts < max_attempts:
+                self._sleep(self.cfg.llm.backoff_base_s * 2 ** (attempts - 1))
         raise _ProviderFailed(f"{reason} after {attempts} attempts")
 
     def _error_detail(self, body: dict) -> str:
@@ -234,20 +286,21 @@ class LLMClient:
         if not isinstance(message, str) or not message.strip():
             return ""
         for p in self.providers:
-            key = self._key(p)
-            if key:
-                message = message.replace(key, "[REDACTED]")
+            for env in p.key_envs:
+                key = self._key_value(env)
+                if key:
+                    message = message.replace(key, "[REDACTED]")
         return ": " + " ".join(message.split())[:_MAX_ERROR_CHARS]
 
-    def _throttle(self, p: _Provider) -> None:
-        last = self._last_request.get(p.name)
+    def _throttle(self, env: str, rpm: float) -> None:
+        last = self._last_request.get(env)
         if last is not None:
-            wait = last + 60.0 / p.rpm - self._clock()
+            wait = last + 60.0 / rpm - self._clock()
             if wait > 0:
                 self._sleep(wait)
-        self._last_request[p.name] = self._clock()
+        self._last_request[env] = self._clock()
 
-    # ---- daily budget ----
+    # ---- daily budget (per key) ----
 
     @property
     def _budget_file(self) -> Path:
@@ -259,25 +312,26 @@ class LLMClient:
         except (OSError, ValueError):
             return {}
 
-    def calls_today(self, name: str) -> int:
-        entry = self._read_budget().get(name, {})
-        return entry.get("calls", 0) if entry.get("date") == self._today() else 0
-
-    def _check_budget(self, p: _Provider) -> None:
-        used, limit = self.calls_today(p.name), p.daily_budget
-        if used >= limit * self.cfg.llm.budget_warn_ratio:
-            raise BudgetNearlyExhausted(
-                f"{p.name} has used {used}/{limit} of today's calls "
-                f"(>= {self.cfg.llm.budget_warn_ratio:.0%}). Stopping; tell the user before continuing."
-            )
-
-    def _count_call(self, p: _Provider) -> None:
+    def calls_today(self, provider: str, env: str | None = None) -> int:
+        """Real requests made today: for one key, or summed over all keys of the provider."""
         data = self._read_budget()
-        data[p.name] = {"date": self._today(), "calls": self.calls_today(p.name) + 1}
+        total = 0
+        for name, entry in data.items():
+            prov, _, key_env = name.partition(":")
+            if prov != provider or (env not in (None, "") and key_env != env):
+                continue
+            if entry.get("date") == self._today():
+                total += entry.get("calls", 0)
+        return total
+
+    def _count_call(self, p: _Provider, env: str) -> None:
+        data = self._read_budget()
+        name = f"{p.name}:{env}"
+        data[name] = {"date": self._today(), "calls": self.calls_today(p.name, env) + 1}
         self._cache_dir.mkdir(parents=True, exist_ok=True)
         self._budget_file.write_text(json.dumps(data), encoding="utf-8")
 
-    # ---- disk cache (key includes provider and model) ----
+    # ---- disk cache (key includes provider and model, never the API key) ----
 
     def _cache_path(self, p: _Provider, system, prompt) -> Path:
         raw = json.dumps([p.name, p.model, system or "", prompt], ensure_ascii=False)

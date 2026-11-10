@@ -140,7 +140,7 @@ def _summarize(cfg, split, limit, records, served, stopped_early) -> dict:
             "context_prefix": cfg.chunking.context_prefix,
             "embedding_model": cfg.embeddings.model,
             "primary": cfg.llm.primary.model,
-            "fallback": cfg.llm.fallback.model,
+            "fallback": cfg.llm.fallback.model if cfg.llm.fallback else None,
         },
     }
 

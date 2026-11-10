@@ -1,6 +1,7 @@
 import json
 import logging
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -57,12 +58,22 @@ class FakeTime:
         self.now += seconds
 
 
+def _provider(provider, model, key_env=None, key_envs=None, daily_budget=200):
+    p = SimpleNamespace(provider=provider, model=model, rpm=600000, daily_budget=daily_budget)
+    if key_envs:
+        p.api_key_envs = key_envs
+    else:
+        p.api_key_env = key_env
+    return p  # rpm is effectively unlimited unless a test sets it
+
+
 @pytest.fixture
 def cfg(tmp_path):
+    """Tests build their own two-provider setup so they do not depend on the production config."""
     c = load_config()
     c.llm.cache_dir = str(tmp_path / "llm")
-    c.llm.primary.rpm = 600000  # effectively no throttle unless a test sets it
-    c.llm.fallback.rpm = 600000
+    c.llm.primary = _provider("gemini", "gemini-test", key_env="GEMINI_API_KEY")
+    c.llm.fallback = _provider("groq", "groq-test", key_env="GROQ_API_KEY", daily_budget=1000)
     return c
 
 
@@ -275,7 +286,7 @@ def test_budget_file_lives_in_cache_dir(cfg, tm):
     t = FakeTransport(gemini=[gemini_ok()])
     make_client(cfg, tm, t).complete("question")
     data = json.loads((Path(cfg.llm.cache_dir) / "budget.json").read_text())
-    assert data["gemini"] == {"date": "2026-11-10", "calls": 1}
+    assert data["gemini:GEMINI_API_KEY"] == {"date": "2026-11-10", "calls": 1}
 
 
 # ---------------- generate() ----------------
@@ -367,3 +378,108 @@ def test_long_error_messages_are_truncated(cfg, tm):
     with pytest.raises(LLMError) as exc:
         make_client(cfg, tm, t2).complete("another question")
     assert len(str(exc.value)) < 1000
+
+
+# ---------------- multiple keys per provider ----------------
+
+G1, G2, G3 = "groq-key-one", "groq-key-two", "groq-key-three"
+GROQ_ENVS = ["GROQ_API_KEY_1", "GROQ_API_KEY_2", "GROQ_API_KEY_3"]
+GROQ_KEYS = dict(zip(GROQ_ENVS, [G1, G2, G3]))
+
+
+@pytest.fixture
+def gcfg(cfg):
+    """Groq only, three keys, no fallback provider (the production shape)."""
+    cfg.llm.primary = _provider("groq", "groq-test", key_envs=GROQ_ENVS, daily_budget=10)
+    cfg.llm.fallback = None
+    return cfg
+
+
+def bearer(call):
+    return call["headers"]["Authorization"].removeprefix("Bearer ")
+
+
+def groq_client(cfg, tm, t, keys=None, today="2026-11-10"):
+    return make_client(cfg, tm, t, keys=GROQ_KEYS if keys is None else keys, today=today)
+
+
+def write_budget(cfg, counts, today="2026-11-10"):
+    path = Path(cfg.llm.cache_dir)
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "budget.json").write_text(json.dumps(
+        {f"groq:{env}": {"date": today, "calls": n} for env, n in counts.items()}))
+
+
+def test_429_rotates_to_next_key_immediately(gcfg, tm):
+    t = FakeTransport(groq=[HttpResponse(429, {}), groq_ok("from key two")])
+    out = groq_client(gcfg, tm, t).complete("question")
+    assert out == "from key two"
+    assert [bearer(c) for c in t.calls] == [G1, G2]
+    assert tm.sleeps == []  # rotation is immediate, no backoff
+
+
+def test_rate_limited_key_is_avoided_until_cooldown_expires(gcfg, tm):
+    t = FakeTransport(groq=[HttpResponse(429, {}), groq_ok("a"), groq_ok("b"), groq_ok("c")])
+    client = groq_client(gcfg, tm, t)
+    client.complete("q1")  # key1 429 -> key2
+    client.complete("q2")  # key1 still cooling -> key2
+    tm.now += gcfg.llm.key_cooldown_s + 1
+    client.complete("q3")  # cooldown over -> back to key1
+    assert [bearer(c) for c in t.calls] == [G1, G2, G2, G1]
+
+
+def test_all_keys_rate_limited_is_bounded_and_ends_in_clean_error(gcfg, tm):
+    t = FakeTransport(groq=[HttpResponse(429, {})] * 20)
+    with pytest.raises(LLMError):
+        groq_client(gcfg, tm, t).complete("question")
+    # 3 keys tried at once, then (1 + max_retries) backoff rounds; never an unbounded loop
+    assert len(t.calls) == 5
+    assert all(k not in str(LLMError) for k in GROQ_KEYS.values())
+
+
+def test_key_at_budget_is_skipped_for_the_next_key(gcfg, tm):
+    write_budget(gcfg, {"GROQ_API_KEY_1": 8})  # 80% of 10
+    t = FakeTransport(groq=[groq_ok()])
+    groq_client(gcfg, tm, t).complete("question")
+    assert [bearer(c) for c in t.calls] == [G2]
+
+
+def test_all_keys_over_budget_stops_with_budget_error(gcfg, tm):
+    write_budget(gcfg, {"GROQ_API_KEY_1": 8, "GROQ_API_KEY_2": 9, "GROQ_API_KEY_3": 8})
+    t = FakeTransport(groq=[groq_ok()])
+    with pytest.raises(BudgetNearlyExhausted) as exc:
+        groq_client(gcfg, tm, t).complete("question")
+    assert t.calls == []
+    assert "groq" in str(exc.value) and "GROQ_API_KEY_1" in str(exc.value)
+    assert not any(k in str(exc.value) for k in GROQ_KEYS.values())
+
+
+def test_budget_is_counted_per_key(gcfg, tm):
+    t = FakeTransport(groq=[HttpResponse(429, {}), groq_ok()])
+    client = groq_client(gcfg, tm, t)
+    client.complete("question")
+    data = json.loads((Path(gcfg.llm.cache_dir) / "budget.json").read_text())
+    assert data["groq:GROQ_API_KEY_1"]["calls"] == 1
+    assert data["groq:GROQ_API_KEY_2"]["calls"] == 1
+    assert client.calls_today("groq") == 2
+    assert client.calls_today("groq", "GROQ_API_KEY_2") == 1
+
+
+def test_only_configured_keys_that_are_set_are_used(gcfg, tm):
+    t = FakeTransport(groq=[groq_ok()])
+    groq_client(gcfg, tm, t, keys={"GROQ_API_KEY_3": G3}).complete("question")
+    assert [bearer(c) for c in t.calls] == [G3]
+
+
+def test_no_fallback_provider_means_clean_error_when_groq_fails(gcfg, tm):
+    t = FakeTransport(groq=[HttpResponse(500, {})] * 3)
+    with pytest.raises(LLMError):
+        groq_client(gcfg, tm, t, keys={"GROQ_API_KEY_1": G1}).complete("question")
+    assert t.count("generativelanguage") == 0
+
+
+def test_production_config_is_groq_only_with_three_keys():
+    prod = load_config()
+    client = LLMClient(prod, transport=FakeTransport(), api_keys={})
+    assert [p.name for p in client.providers] == ["groq"]
+    assert client.providers[0].key_envs == GROQ_ENVS
