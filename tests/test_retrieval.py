@@ -138,9 +138,37 @@ def test_route_no_year_filters_company_only():
     assert route("Which segments does 3M report?", KNOWN).filters == {"company": "3M"}
 
 
-def test_route_multiple_years_leaves_year_unfiltered():
-    r = route("How did 3M capex change from FY2017 to FY2018?", KNOWN)
-    assert r.filters == {"company": "3M"}
+def test_route_multiple_years_uses_the_latest():
+    # the latest 10-K contains the prior-year comparatives
+    assert route("How did 3M capex change from FY2017 to FY2018?", KNOWN).filters == {
+        "company": "3M", "fiscal_year": 2018,
+    }
+    assert route("Has Adobe improved between 2022 and the 2021 fiscal period?", KNOWN).filters == {
+        "company": "Adobe", "fiscal_year": 2022,
+    }
+
+
+@pytest.mark.parametrize(
+    "question",
+    ["Did AMD report customer concentration in FY22?", "AMD FY 22 revenue", "AMD fy'22 revenue", "AMD FY22."],
+)
+def test_route_two_digit_fiscal_year(question):
+    assert route(question, KNOWN).filters == {"company": "AMD", "fiscal_year": 2022}
+
+
+def test_route_four_digit_fy_is_not_read_as_two_digit():
+    assert route("3M FY2018 capex", KNOWN).filters["fiscal_year"] == 2018
+    assert route("3M FY2018 compared with FY2017", KNOWN).filters["fiscal_year"] == 2018
+
+
+def test_route_fiscal_markers_win_over_bare_years():
+    r = route("Adobe FY2016 operating income versus 2019 guidance", KNOWN)
+    assert r.filters["fiscal_year"] == 2016
+
+
+def test_route_two_digit_year_needs_the_fy_marker():
+    # a bare two-digit number is not a year
+    assert route("What were Adobe's 22 largest customers?", KNOWN).filters == {"company": "Adobe"}
 
 
 def test_route_multiple_companies_in_scope_without_company_filter():

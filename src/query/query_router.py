@@ -6,8 +6,10 @@ no known company is treated as out of scope.
 import re
 from dataclasses import dataclass, field
 
-# 4-digit years 1990-2099. Fiscal-year markers ("FY2018", "fiscal year 2018") win over bare years.
+# 4-digit years 1990-2099. Fiscal-year markers ("FY2018", "fiscal year 2018", "FY22") win over bare
+# years. A two-digit "FY22" means 2022 (the corpus covers FY2015 onward).
 _FY = re.compile(r"\b(?:fy|fiscal(?:\s+year)?)\s*[-']?\s*((?:19[9]|20\d)\d)\b", re.IGNORECASE)
+_FY_TWO_DIGIT = re.compile(r"(?<![A-Za-z0-9])fy\s*'?\s*(\d{2})(?!\d)", re.IGNORECASE)
 _BARE_YEAR = re.compile(r"\b((?:199|20\d)\d)\b")
 
 
@@ -28,8 +30,11 @@ def _detect_companies(q: str, known_companies: list[str]) -> list[str]:
 
 
 def _detect_year(q: str) -> int | None:
-    years = {int(y) for y in _FY.findall(q)} or {int(y) for y in _BARE_YEAR.findall(q)}
-    return years.pop() if len(years) == 1 else None  # none or ambiguous -> no year filter
+    """Fiscal year named in the question. Several years (a comparison such as "FY2017 to FY2018")
+    resolve to the latest, because the latest 10-K carries the prior-year comparatives."""
+    years = {int(y) for y in _FY.findall(q)} | {2000 + int(y) for y in _FY_TWO_DIGIT.findall(q)}
+    years = years or {int(y) for y in _BARE_YEAR.findall(q)}
+    return max(years) if years else None
 
 
 def route(q: str, known_companies: list[str]) -> RoutedQuery:
