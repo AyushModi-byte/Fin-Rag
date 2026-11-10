@@ -576,3 +576,121 @@ def test_default_max_output_tokens_comes_from_config(cfg, tm):
     t = FakeTransport(groq=[groq_ok()])
     make_client(cfg, tm, t).complete("p", only="groq")
     assert t.calls[0]["payload"]["max_tokens"] == cfg.llm.max_output_tokens
+
+
+# ---------------- daily TOKEN budget (Groq has 200,000 tokens/day per account) ----------------
+
+def groq_tokens(total, text="groq answer"):
+    return HttpResponse(200, {"choices": [{"message": {"content": text}}], "usage": {"total_tokens": total}})
+
+
+def budget_data(cfg):
+    return json.loads((Path(cfg.llm.cache_dir) / "budget.json").read_text())
+
+
+def write_usage(cfg, entries, today="2026-11-10"):
+    path = Path(cfg.llm.cache_dir)
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "budget.json").write_text(json.dumps({f"groq:{env}": {"date": today, **e} for env, e in entries.items()}))
+
+
+@pytest.fixture
+def tcfg(gcfg):
+    gcfg.llm.primary.daily_budget = 1000
+    gcfg.llm.primary.daily_token_budget = 1000  # 80% = 800 tokens
+    return gcfg
+
+
+def test_tokens_are_recorded_per_key_and_calls_are_kept(tcfg, tm):
+    t = FakeTransport(groq=[groq_tokens(300), groq_tokens(250)])
+    client = groq_client(tcfg, tm, t)
+    client.complete("q1")
+    client.complete("q2")
+    entry = budget_data(tcfg)["groq:GROQ_API_KEY_1"]
+    assert entry["tokens"] == 550 and entry["calls"] == 2
+    assert client.tokens_today("groq") == 550
+    assert client.tokens_today("groq", "GROQ_API_KEY_2") == 0
+
+
+def test_gemini_usage_is_recorded_too(cfg, tm):
+    body = {"candidates": [{"content": {"parts": [{"text": "hi"}]}}], "usageMetadata": {"totalTokenCount": 77}}
+    t = FakeTransport(gemini=[HttpResponse(200, body)])
+    client = make_client(cfg, tm, t)
+    client.complete("q")
+    assert client.tokens_today("gemini") == 77
+
+
+def test_missing_usage_is_not_an_error(tcfg, tm):
+    t = FakeTransport(groq=[groq_ok()])  # no usage field
+    groq_client(tcfg, tm, t).complete("q")
+    assert budget_data(tcfg)["groq:GROQ_API_KEY_1"].get("tokens", 0) == 0
+
+
+def test_key_at_80_percent_of_token_budget_is_skipped(tcfg, tm):
+    write_usage(tcfg, {"GROQ_API_KEY_1": {"calls": 1, "tokens": 800}})
+    t = FakeTransport(groq=[groq_ok()])
+    groq_client(tcfg, tm, t).complete("q")
+    assert [bearer(c) for c in t.calls] == [G2]
+
+
+def test_all_keys_over_token_budget_stops_and_mentions_tokens(tcfg, tm):
+    write_usage(tcfg, {e: {"calls": 1, "tokens": 900} for e in GROQ_ENVS})
+    t = FakeTransport(groq=[groq_ok()])
+    with pytest.raises(BudgetNearlyExhausted) as exc:
+        groq_client(tcfg, tm, t).complete("q")
+    assert t.calls == [] and "token" in str(exc.value).lower()
+
+
+def test_token_budget_off_when_not_configured(gcfg, tm):
+    write_usage(gcfg, {"GROQ_API_KEY_1": {"calls": 1, "tokens": 10**9}})
+    t = FakeTransport(groq=[groq_ok()])
+    groq_client(gcfg, tm, t).complete("q")
+    assert [bearer(c) for c in t.calls] == [G1]
+
+
+def test_tokens_reset_on_a_new_day(tcfg, tm):
+    write_usage(tcfg, {"GROQ_API_KEY_1": {"calls": 1, "tokens": 900}}, today="2026-11-09")
+    t = FakeTransport(groq=[groq_ok()])
+    groq_client(tcfg, tm, t, today="2026-11-10").complete("q")
+    assert [bearer(c) for c in t.calls] == [G1]
+
+
+def test_cache_hit_consumes_no_tokens(tcfg, tm):
+    t = FakeTransport(groq=[groq_tokens(100)])
+    client = groq_client(tcfg, tm, t)
+    client.complete("same")
+    client.complete("same")
+    assert client.tokens_today("groq") == 100
+
+
+TPD_BODY = {"error": {"message": "Rate limit reached for model `x` in organization `org_1` service tier "
+            "`on_demand` on tokens per day (TPD): Limit 200000, Used 199087, Requested 1951. "
+            "Please try again in 7m28.416s."}}
+TPM_BODY = {"error": {"message": "Rate limit reached for model `x` on tokens per minute (TPM): "
+            "Limit 8000, Used 7900, Requested 500. Please try again in 3.2s."}}
+
+
+def test_per_day_429_marks_the_key_done_for_the_day_and_rotates_without_sleeping(gcfg, tm):
+    t = FakeTransport(groq=[HttpResponse(429, TPD_BODY), groq_ok("two"), groq_ok("three")])
+    client = groq_client(gcfg, tm, t)
+    assert client.complete("q1") == "two"
+    tm.now += gcfg.llm.key_cooldown_s * 10  # cooldown long over: key 1 must STILL be skipped today
+    client.complete("q2")
+    assert [bearer(c) for c in t.calls] == [G1, G2, G2]
+    assert tm.sleeps == []
+
+
+def test_per_minute_429_does_not_retire_the_key(gcfg, tm):
+    t = FakeTransport(groq=[HttpResponse(429, TPM_BODY), groq_ok("two"), groq_ok("three")])
+    client = groq_client(gcfg, tm, t)
+    client.complete("q1")
+    tm.now += gcfg.llm.key_cooldown_s + 1
+    client.complete("q2")
+    assert [bearer(c) for c in t.calls] == [G1, G2, G1]  # back to key 1 after the cooldown
+
+
+def test_per_day_429_on_every_key_ends_in_a_clean_budget_stop_without_retry_loops(gcfg, tm):
+    t = FakeTransport(groq=[HttpResponse(429, TPD_BODY)] * 10)
+    with pytest.raises(BudgetNearlyExhausted):
+        groq_client(gcfg, tm, t).complete("q")
+    assert len(t.calls) == 3 and tm.sleeps == []  # one try per key, no backoff waits

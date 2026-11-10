@@ -8,6 +8,11 @@ the limited key on a cooldown. Every real request increments a per-key daily cou
 `budget_warn_ratio` of `daily_budget` is skipped, and when every key is there the client stops and
 raises BudgetNearlyExhausted so the user is told before anything else is spent.
 
+Tokens are counted too (from each response's usage block) against the optional `daily_token_budget`
+per key, with the same ratio: Groq's free tier allows 200,000 tokens/day per account and that, not
+the request count, is what runs out first. A 429 that cites a PER-DAY limit retires that key for
+the day at once (no sleeping on a "try again in 7m" hint) and the next key is used.
+
 API keys travel only in request headers and are never logged or put in error messages.
 """
 import hashlib
@@ -32,6 +37,8 @@ _MAX_ERROR_CHARS = 300
 _USER_AGENT = "finrag/0.1"  # some edges reject urllib's default agent
 
 
+# a 429 naming a daily limit: waiting seconds or minutes cannot help
+_PER_DAY_LIMIT = re.compile(r"per day|\(TPD\)|\(RPD\)", re.IGNORECASE)
 _RETRY_IN = re.compile(r"try again in\s+((?:\d+(?:\.\d+)?\s*(?:ms|s|m|h)\s*)+)", re.IGNORECASE)
 _DURATION_PART = re.compile(r"(\d+(?:\.\d+)?)\s*(ms|s|m|h)", re.IGNORECASE)
 _UNIT_SECONDS = {"ms": 0.001, "s": 1.0, "m": 60.0, "h": 3600.0}
@@ -101,6 +108,7 @@ class _Provider:
     rpm: float
     daily_budget: int
     key_envs: list[str]
+    daily_token_budget: int | None = None  # per key; None = tokens are counted but not limited
 
 
 def _gemini_request(url_tpl, p, key, prompt, system, cfg, max_tokens):
@@ -148,10 +156,23 @@ def _groq_parse(body: dict) -> tuple[str, bool]:
         return "", False
 
 
+def _gemini_usage(body: dict) -> int | None:
+    meta = body.get("usageMetadata") if isinstance(body, dict) else None
+    n = meta.get("totalTokenCount") if isinstance(meta, dict) else None
+    return n if isinstance(n, int) else None
+
+
+def _groq_usage(body: dict) -> int | None:
+    usage = body.get("usage") if isinstance(body, dict) else None
+    n = usage.get("total_tokens") if isinstance(usage, dict) else None
+    return n if isinstance(n, int) else None
+
+
 _ADAPTERS = {
     "gemini": (_gemini_request, _gemini_parse),
     "groq": (_groq_request, _groq_parse),
 }
+_USAGE = {"gemini": _gemini_usage, "groq": _groq_usage}
 
 
 def _key_envs(role) -> list[str]:
@@ -178,7 +199,8 @@ class LLMClient:
             if role.provider not in _ADAPTERS:
                 raise ValueError(f"unsupported LLM provider: {role.provider}")
             self.providers.append(
-                _Provider(role.provider, role.model, role.rpm, role.daily_budget, _key_envs(role))
+                _Provider(role.provider, role.model, role.rpm, role.daily_budget, _key_envs(role),
+                          getattr(role, "daily_token_budget", None))
             )
         self._api_keys = api_keys
         self._cache_dir = Path(cfg.llm.cache_dir)
@@ -242,8 +264,21 @@ class LLMClient:
     def _threshold(self, p: _Provider) -> float:
         return p.daily_budget * self.cfg.llm.budget_warn_ratio
 
+    def _token_threshold(self, p: _Provider) -> float | None:
+        if not p.daily_token_budget:
+            return None
+        return p.daily_token_budget * self.cfg.llm.budget_warn_ratio
+
+    def _key_has_room(self, p: _Provider, env: str) -> bool:
+        if self._entry_today(p.name, env).get("exhausted"):
+            return False  # the provider said this key is out of its daily quota
+        limit = self._token_threshold(p)
+        if limit is not None and self.tokens_today(p.name, env) >= limit:
+            return False
+        return self.calls_today(p.name, env) < self._threshold(p)
+
     def _under_budget(self, p: _Provider) -> list[str]:
-        return [e for e in self._usable_envs(p) if self.calls_today(p.name, e) < self._threshold(p)]
+        return [e for e in self._usable_envs(p) if self._key_has_room(p, e)]
 
     def _is_fresh(self, env: str) -> bool:
         return self._cooldown_until.get(env, 0.0) <= self._clock()
@@ -254,11 +289,15 @@ class LLMClient:
         eligible = self._under_budget(p)
         if not eligible:
             counts = ", ".join(
-                f"{e}={self.calls_today(p.name, e)}/{p.daily_budget}" for e in self._usable_envs(p)
+                f"{e}={self.calls_today(p.name, e)}/{p.daily_budget} calls"
+                + (f", {self.tokens_today(p.name, e)}/{p.daily_token_budget} tokens" if p.daily_token_budget else "")
+                + (" (provider said: daily limit reached)" if self._entry_today(p.name, e).get("exhausted") else "")
+                for e in self._usable_envs(p)
             )
             raise BudgetNearlyExhausted(
                 f"{p.name}: every API key has used >= {self.cfg.llm.budget_warn_ratio:.0%} of its daily "
-                f"budget ({counts}). Stopping; tell the user before continuing."
+                f"request or token budget, or hit the provider's daily limit ({counts}). "
+                "Stopping; tell the user before continuing."
             )
         fresh = [e for e in eligible if self._is_fresh(e)]
         if fresh:
@@ -291,6 +330,7 @@ class LLMClient:
                 reason = type(e).__name__
             else:
                 if resp.status == 200:
+                    self._count_tokens(p, env, _USAGE[p.name](resp.body))  # spent even if the reply is unusable
                     text, truncated = parse(resp.body)
                     if truncated:  # never cache or return a half-finished reply
                         raise _ProviderFailed(
@@ -301,7 +341,14 @@ class LLMClient:
                     raise _ProviderFailed("empty response")
                 reason = f"HTTP {resp.status}" + self._error_detail(resp.body)
                 if resp.status == 429:
-                    hint = parse_retry_after(self._raw_error_message(resp.body))
+                    message = self._raw_error_message(resp.body)
+                    if _PER_DAY_LIMIT.search(message):
+                        # daily quota gone: retire this key for today; the next _pick_key uses another key
+                        # or raises BudgetNearlyExhausted, never a sleep-and-retry on a minutes-long hint
+                        self._mark_exhausted(p, env)
+                        logger.warning("%s key %s hit its DAILY limit; skipping it for the rest of the day", p.name, env)
+                        continue
+                    hint = parse_retry_after(message)
                     self._cooldown_until[env] = self._clock() + self.cfg.llm.key_cooldown_s
                     if self._has_other_fresh_key(p, env):
                         logger.warning("%s key %s rate limited; rotating to the next key", p.name, env)
@@ -354,8 +401,11 @@ class LLMClient:
         except (OSError, ValueError):
             return {}
 
-    def calls_today(self, provider: str, env: str | None = None) -> int:
-        """Real requests made today: for one key, or summed over all keys of the provider."""
+    def _entry_today(self, provider: str, env: str) -> dict:
+        entry = self._read_budget().get(f"{provider}:{env}", {})
+        return entry if entry.get("date") == self._today() else {}
+
+    def _sum_today(self, provider: str, env: str | None, field: str) -> int:
         data = self._read_budget()
         total = 0
         for name, entry in data.items():
@@ -363,15 +413,35 @@ class LLMClient:
             if prov != provider or (env not in (None, "") and key_env != env):
                 continue
             if entry.get("date") == self._today():
-                total += entry.get("calls", 0)
+                total += entry.get(field, 0)
         return total
 
-    def _count_call(self, p: _Provider, env: str) -> None:
+    def calls_today(self, provider: str, env: str | None = None) -> int:
+        """Real requests made today: for one key, or summed over all keys of the provider."""
+        return self._sum_today(provider, env, "calls")
+
+    def tokens_today(self, provider: str, env: str | None = None) -> int:
+        """Tokens the provider reported using today (usage blocks), per key or summed."""
+        return self._sum_today(provider, env, "tokens")
+
+    def _update_entry(self, p: _Provider, env: str, change: Callable[[dict], None]) -> None:
         data = self._read_budget()
-        name = f"{p.name}:{env}"
-        data[name] = {"date": self._today(), "calls": self.calls_today(p.name, env) + 1}
+        entry = dict(self._entry_today(p.name, env))
+        change(entry)
+        entry["date"] = self._today()
+        data[f"{p.name}:{env}"] = entry
         self._cache_dir.mkdir(parents=True, exist_ok=True)
         self._budget_file.write_text(json.dumps(data), encoding="utf-8")
+
+    def _count_call(self, p: _Provider, env: str) -> None:
+        self._update_entry(p, env, lambda e: e.__setitem__("calls", e.get("calls", 0) + 1))
+
+    def _count_tokens(self, p: _Provider, env: str, n: int | None) -> None:
+        if n:
+            self._update_entry(p, env, lambda e: e.__setitem__("tokens", e.get("tokens", 0) + n))
+
+    def _mark_exhausted(self, p: _Provider, env: str) -> None:
+        self._update_entry(p, env, lambda e: e.__setitem__("exhausted", True))
 
     # ---- disk cache (key includes provider and model, never the API key) ----
 
