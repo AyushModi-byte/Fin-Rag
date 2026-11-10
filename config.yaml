@@ -3,7 +3,7 @@ lexical: {stopwords: en}
 embeddings: {model: BAAI/bge-small-en-v1.5, batch_size: 32}
 chunking: {child_tokens: 256, overlap_tokens: 32, context_prefix: true}
 retrieval: {top_k: 20, rrf_k: 60, use_router_filter: true}
-rerank: {enabled: true, model: Xenova/ms-marco-MiniLM-L-6-v2, top_n: 5}
+rerank: {enabled: false, model: Xenova/ms-marco-MiniLM-L-6-v2, top_n: 5}
 llm:
   primary: {provider: groq, model: openai/gpt-oss-120b, rpm: 25, daily_budget: 1000, api_key_envs: [GROQ_API_KEY_1, GROQ_API_KEY_2, GROQ_API_KEY_3]}
   fallback: null          # Gemini removed (persistent 503s); a 2nd provider can be added here later
