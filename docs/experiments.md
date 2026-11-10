@@ -126,7 +126,7 @@ Candidates are the current hybrid results (mxbai-large, BM25 weight 0.25, router
 
 - Offline prefilter: with the current retrieval, gold page in the top 5 for 18 questions, at rank 6 for 3 (00585, 00790, 01279), ranks 10 to 14 for 4 more; so top_n 8 can only help up to 3 questions.
 - The dev run (`data/eval/runs/20261110T153328_dev.json`) is **invalid: 11 of 29 questions errored with Groq HTTP 429 on tokens per day (TPD)**: two of the three accounts reported 199,087 and 198,001 of 200,000 tokens used. Its recall@5 0.379 and accuracy 0.345 are NOT results of top_n 8 and must not be quoted. 18 answers were served before the quota ran out and are in the LLM disk cache, so a rerun needs only about 11 new answers plus judges.
-- Root cause on our side: `LLMClient` counts requests per key per day (719 of 3,000 today) but not tokens, so its 80% guard never fired. Config reverted to `top_n: 5`. A token counter (Groq returns `usage` in every response) is the fix to add before the next large eval.
+- Root cause on our side: `LLMClient` counts requests per key per day (719 of 3,000 today) but not tokens, so its 80% guard never fired. Config reverted to `top_n: 5`. **Fixed afterwards (commit `c1fe39f`):** `LLMClient` now counts tokens per key from each response's `usage` block, stops at 80% of `llm.primary.daily_token_budget` (200,000), and a 429 naming a per-day limit retires that key for the day instead of sleeping on the provider's hint. 5d itself is still untested (skipped by decision).
 
 ## Final (test split, run once)
 

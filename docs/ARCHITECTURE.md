@@ -41,7 +41,7 @@ question -> security/acl + redact -> cache/semantic_cache (hit? return)
 | query | query_router.py | Rule-based company/year detection, scope check |
 | cache | semantic_cache.py | Exact then similarity cache |
 | prompts | prompt_templates.py | Versioned prompts (`grounded_v1` active, `grounded_v2` tested and rejected) |
-| llm | llm_client.py | Groq client: key rotation, retries, backoff with provider hints, disk cache, throttle, per-key daily request budget |
+| llm | llm_client.py | Groq client: key rotation, retries, backoff with provider hints, disk cache, throttle, per-key daily request and token budgets |
 | generation | grounded_answer.py | Answer with `[doc_id p.N]` citations or `I don't know` |
 | generation | context_expansion.py | Replace a retrieved table row group with its full table (flag `generation.expand_tables`, off) |
 | eval | rag_metrics.py | recall@k, MRR, LLM-judge accuracy, faithfulness |
@@ -104,7 +104,7 @@ retrieval: {top_k: 20, rrf_k: 60, dense_weight: 1.0, bm25_weight: 0.25, use_rout
 rerank: {enabled: false, model: Xenova/ms-marco-MiniLM-L-6-v2, top_n: 5}   # top_n is also the context size given to the LLM
 generation: {expand_tables: false, max_context_tokens: 4000, prompt_version: grounded_v1}
 llm:
-  primary: {provider: groq, model: openai/gpt-oss-120b, rpm: 25, daily_budget: 1000, api_key_envs: [GROQ_API_KEY_1, GROQ_API_KEY_2, GROQ_API_KEY_3]}
+  primary: {provider: groq, model: openai/gpt-oss-120b, rpm: 25, daily_budget: 1000, daily_token_budget: 200000, api_key_envs: [GROQ_API_KEY_1, GROQ_API_KEY_2, GROQ_API_KEY_3]}
   fallback: null          # Gemini removed (persistent 503s)
   temperature: 0
   max_output_tokens: 2048
@@ -122,7 +122,7 @@ eval: {dev_ratio: 0.5, seed: 42, n_companies: 10, min_questions: 50, recall_k: 5
 
 ## LLM call policy
 
-Order per request: disk cache -> primary key (Groq) -> on 429/5xx/timeout, honor the provider's "try again in" hint, rotate to the next key (the three keys are separate Groq accounts, so quotas are independent), backoff and retry up to `max_retries`. The cache key includes provider and model. Groq `openai/gpt-oss-120b` free limits (checked 2026-11-10): 30 requests/min, 1,000 requests/day, 8,000 tokens/min, **200,000 tokens/day**, per organization. `LLMClient` counts requests per key per day and stops at `budget_warn_ratio` of `daily_budget`, but **does not count tokens**: on 2026-11-10 two accounts hit the 200,000 tokens/day limit (a 5d dev eval had 11 of 29 questions fail with 429) while only 719 of 3,000 requests were used. A token counter (Groq returns `usage` on every response) is the known missing guard.
+Order per request: disk cache -> a key under budget (Groq) -> on 429/5xx/timeout, honor the provider's "try again in" hint, rotate to the next key (the three keys are separate Groq accounts, so quotas are independent), backoff and retry up to `max_retries`. A 429 that names a per-day limit retires that key for the rest of the day immediately (no sleeping on a "try again in 7m" hint). The cache key includes provider and model. Groq `openai/gpt-oss-120b` free limits (checked 2026-11-10): 30 requests/min, 1,000 requests/day, 8,000 tokens/min, **200,000 tokens/day**, per organization. `LLMClient` counts requests AND tokens (from each response's `usage` block) per key per day in `.cache/llm/budget.json` and stops with `BudgetNearlyExhausted` at `budget_warn_ratio` (80%) of `daily_budget` or `daily_token_budget` (200,000). Token counting was added after 2026-11-10, when two accounts hit the 200,000 tokens/day limit (a dev eval had 11 of 29 questions fail with 429) while only 719 of 3,000 requests were used.
 
 ## Eval definitions
 
@@ -151,5 +151,5 @@ Order per request: disk cache -> primary key (Groq) -> on 429/5xx/timeout, honor
 - LLM-as-judge is not human evaluation; the answerer and both judges are the same model.
 - Multi-page questions (ratios needing two statements) fail when only one page is retrieved, and page-level recall@5 hides it.
 - Scanned or image-only pages are skipped (no OCR).
-- Groq free tier: 200,000 tokens/day per account, not tracked by `LLMClient`.
+- Groq free tier: 200,000 tokens/day per account (now counted by `LLMClient`); a full dev eval with every answer regenerated is a large share of it.
 - Untested ideas: statement-type boost, ratio-term expansion, multi-page diversification of the context, sentence-aware windowing, top_n 8 (run invalid, see experiment 16).

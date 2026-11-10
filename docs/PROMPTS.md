@@ -1,5 +1,19 @@
 # FinRag: Claude Code Prompts
 
+## Where we are (updated 2026-11-10)
+
+Tasks 1-9 are DONE (the Task 9 tuning loop is finished: experiments 0-16 in `docs/experiments.md`, index v2 built, token counting added to `LLMClient`). **Resume at Task 10.** Task 11 follows. Nothing for Tasks 10 and 11 exists yet (`src/cache`, `src/observability`, `src/security`, `src/api` hold only `__init__.py`; no `main.py`, `Dockerfile`, `docker-compose.yaml` or `README.md`).
+
+Last kept dev result, which Task 10's "metrics must not drop" check compares against (experiment 12, run `20261110T140849_dev.json`): recall@5 0.586, MRR 0.452, accuracy 0.586, faithfulness 0.930. The test split has NOT been run; it is reserved for Task 11.
+
+Things the Task 10 and 11 prompts below do not say, but you should know:
+- Task 10 says `pytest -q`: check the REAL exit status (no piping), 201 tests pass at this point.
+- The index is `.cache/index/v2` (294 MB, not committed, built with mxbai-large). For Task 11 the Docker image must mount it or rebuild it (about 1.6 h of CPU embedding), and the image needs the embedding model files (0.64 GB) and the Groq keys as `GROQ_API_KEY_1..3` (not `GEMINI_API_KEY`).
+- Task 11's plan text still says "GEMINI_API_KEY as a secret" and "rerank" in the target metrics; both are out of date (Groq only; rerank is off).
+- Before the Task 11 test run, check `LLMClient` token budgets: a full run regenerates about 29+ answers and judge calls on a split of unknown size.
+- Pick the Docker base image to match the venv's Python (3.13.3), since CLAUDE.md's old 3.11 was never what the tests ran on.
+- Open ideas that were not tried (see `docs/experiments.md` failure analysis): multi-page retrieval for two-page ratio questions, statement-type boost, ratio-term expansion, top_n 8 (run was invalid).
+
 Run one prompt per session step. Start a fresh `/clear` between tasks. After each task, check tests pass and `git log` shows a commit before moving on.
 
 ## Session start (paste every new session)
