@@ -31,6 +31,8 @@ class Chunk(BaseModel):
     page: int
     company: str
     fiscal_year: int
+    table_id: str | None = None  # set when the chunk holds (part of) a table; the id of its parent
+    row_group: int | None = None  # 0-based index of the row group within a split table
 
 
 class Hit(BaseModel):

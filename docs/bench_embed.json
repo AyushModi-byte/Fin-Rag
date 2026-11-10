@@ -1,0 +1,112 @@
+[
+  {
+    "batch": 32,
+    "threads": null,
+    "parallel": null,
+    "sort": false,
+    "max_length": null,
+    "seconds": 35.83,
+    "chunks_per_s": 8.37,
+    "cpu_pct_during": 57.8
+  },
+  {
+    "batch": 8,
+    "threads": null,
+    "parallel": null,
+    "sort": false,
+    "max_length": null,
+    "seconds": 23.2,
+    "chunks_per_s": 12.93,
+    "cpu_pct_during": 58.8
+  },
+  {
+    "batch": 64,
+    "threads": null,
+    "parallel": null,
+    "sort": false,
+    "max_length": null,
+    "seconds": 40.93,
+    "chunks_per_s": 7.33,
+    "cpu_pct_during": 63.1
+  },
+  {
+    "batch": 32,
+    "threads": 8,
+    "parallel": null,
+    "sort": false,
+    "max_length": null,
+    "seconds": 35.74,
+    "chunks_per_s": 8.39,
+    "cpu_pct_during": 58.9
+  },
+  {
+    "batch": 32,
+    "threads": 16,
+    "parallel": null,
+    "sort": false,
+    "max_length": null,
+    "seconds": 38.0,
+    "chunks_per_s": 7.89,
+    "cpu_pct_during": 100.0
+  },
+  {
+    "batch": 32,
+    "threads": 4,
+    "parallel": null,
+    "sort": false,
+    "max_length": null,
+    "seconds": 39.5,
+    "chunks_per_s": 7.59,
+    "cpu_pct_during": 31.0
+  },
+  {
+    "batch": 32,
+    "threads": null,
+    "parallel": null,
+    "sort": true,
+    "max_length": null,
+    "seconds": 27.97,
+    "chunks_per_s": 10.73,
+    "cpu_pct_during": 57.8
+  },
+  {
+    "batch": 32,
+    "threads": 8,
+    "parallel": null,
+    "sort": true,
+    "max_length": null,
+    "seconds": 27.44,
+    "chunks_per_s": 10.93,
+    "cpu_pct_during": 56.3
+  },
+  {
+    "batch": 32,
+    "threads": null,
+    "parallel": null,
+    "sort": false,
+    "max_length": 256,
+    "seconds": 16.65,
+    "chunks_per_s": 18.01,
+    "cpu_pct_during": 54.3
+  },
+  {
+    "batch": 32,
+    "threads": 1,
+    "parallel": 2,
+    "sort": false,
+    "max_length": null,
+    "seconds": 61.26,
+    "chunks_per_s": 4.9,
+    "cpu_pct_during": 15.0
+  },
+  {
+    "batch": 32,
+    "threads": 1,
+    "parallel": 4,
+    "sort": false,
+    "max_length": null,
+    "seconds": 43.22,
+    "chunks_per_s": 6.94,
+    "cpu_pct_during": 26.6
+  }
+]

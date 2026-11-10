@@ -6,10 +6,12 @@ from src.schemas.models import DocMeta, Page
 META = DocMeta(doc_id="ACME_2020_10K", company="Acme", fiscal_year=2020, doc_type="10-K")
 
 
-def cfg(child_tokens=40, overlap_tokens=5, context_prefix=True):
+def cfg(child_tokens=40, overlap_tokens=5, context_prefix=True, max_embed_tokens=400, min_tokens=3):
     return SimpleNamespace(
         chunking=SimpleNamespace(
-            child_tokens=child_tokens, overlap_tokens=overlap_tokens, context_prefix=context_prefix
+            child_tokens=child_tokens, overlap_tokens=overlap_tokens, context_prefix=context_prefix,
+            max_embed_tokens=max_embed_tokens, min_tokens=min_tokens, max_header_rows=3,
+            max_heading_chars=80,
         )
     )
 
@@ -57,8 +59,8 @@ def test_parent_is_page_level_span():
 def test_context_prefix_contains_company_and_year():
     _, chunks = chunk_pages(_pages(), META, cfg())
     ch = next(c for c in chunks if c.page == 2)
-    assert ch.context == "Acme 2020 10-K, page 2"
-    assert embedding_text(ch) == "Acme 2020 10-K, page 2\n" + ch.text
+    assert ch.context == "Acme FY2020 10-K | page 2"
+    assert embedding_text(ch) == "Acme FY2020 10-K | page 2\n" + ch.text
 
 
 def test_context_prefix_can_be_disabled():

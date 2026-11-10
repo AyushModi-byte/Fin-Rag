@@ -8,6 +8,7 @@ from pathlib import Path
 from src.chunking.chunker import chunk_pages, embedding_text
 from src.config import load_config
 from src.embeddings.embedder import Embedder
+from src.embeddings.tokenizer import EmbedTokenizer
 from src.ingestion.loader import load_corpus
 from src.lexical.bm25_index import BM25Index
 from src.schemas.models import Chunk
@@ -38,7 +39,7 @@ def index_chunks(chunks: list[Chunk], cfg, embedder: Embedder | None = None) -> 
     finally:
         store.close()
 
-    bm25 = BM25Index(cfg.lexical.stopwords)
+    bm25 = BM25Index(cfg.lexical.stopwords, cfg.lexical.tokenizer, cfg.lexical.stem)
     bm25.build(chunks)
     bm25.save(root / "bm25")
 
@@ -47,6 +48,8 @@ def index_chunks(chunks: list[Chunk], cfg, embedder: Embedder | None = None) -> 
         "embedding_model": embedder.model_id,
         "embedding_dim": embedder.dim,
         "collection": cfg.index.collection,
+        "lexical_tokenizer": cfg.lexical.tokenizer,
+        "lexical_stem": cfg.lexical.stem,
         "chunks": len(chunks),
         "dense_count": dense_count,
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -70,7 +73,11 @@ def load_index(cfg) -> tuple[VectorStore, BM25Index]:
             "rebuild the index"
         )
     store = VectorStore(root / "qdrant", manifest["collection"], manifest["embedding_dim"])
-    bm25 = BM25Index.load(root / "bm25", cfg.lexical.stopwords)
+    # an index without these keys is v1: bm25s default tokenizer, no stemming
+    bm25 = BM25Index.load(
+        root / "bm25", cfg.lexical.stopwords, manifest.get("lexical_tokenizer", "v1"),
+        manifest.get("lexical_stem", False),
+    )
     return store, bm25
 
 
@@ -83,9 +90,10 @@ def build_index(cfg=None) -> dict:
         Path(cfg.data.parsed_dir),
         reuse_parsed=True,
     )
+    tok = EmbedTokenizer(cfg.embeddings.model)
     chunks: list[Chunk] = []
     for meta, pages in corpus:
-        _, doc_chunks = chunk_pages(pages, meta, cfg)
+        _, doc_chunks = chunk_pages(pages, meta, cfg, tok=tok)
         chunks.extend(doc_chunks)
     manifest = index_chunks(chunks, cfg)
     return {"docs": len(corpus), **manifest}
