@@ -61,6 +61,7 @@ class FakeEmbedder:
 
 def test_hybrid_retriever_fuses_and_passes_filters_to_both():
     cfg = load_config()
+    cfg.retrieval.min_chunk_tokens = 0  # the fake hits are 1-token texts; this test is about fusion
     store = FakeStore([make_hit("a"), make_hit("b")])
     bm25 = FakeBM25([make_hit("c"), make_hit("a")])
     retriever = HybridRetriever(store, bm25, FakeEmbedder(), cfg)
