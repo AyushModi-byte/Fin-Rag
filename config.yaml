@@ -13,6 +13,7 @@ llm:
   temperature: 0
   max_output_tokens: 2048
   key_cooldown_s: 60      # a key that returned 429 is skipped for this long while other keys are fresh
+  max_retry_wait_s: 65    # upper bound on one wait, incl. a provider's "try again in" hint
   backoff_base_s: 2.0     # retry waits: base * 2**attempt
   timeout_s: 30
   max_retries: 2          # per provider, with exponential backoff, then switch provider

@@ -61,10 +61,11 @@ def make_pipeline(cfg, hits, reranker=None, llm=None):
     return QueryPipeline(cfg, retriever, reranker, llm, KNOWN), retriever, llm
 
 
-def test_baseline_config_has_router_and_rerank_off():
+def test_router_and_rerank_switches_exist_in_config():
+    # Values are tuned in Task 9; tests set them explicitly via cfg_with().
     cfg = load_config()
-    assert cfg.retrieval.use_router_filter is False
-    assert cfg.rerank.enabled is False
+    assert isinstance(cfg.retrieval.use_router_filter, bool)
+    assert isinstance(cfg.rerank.enabled, bool)
 
 
 def test_router_off_sends_no_filters_and_no_scope_check():

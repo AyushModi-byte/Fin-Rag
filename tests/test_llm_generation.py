@@ -483,3 +483,46 @@ def test_production_config_is_groq_only_with_three_keys():
     client = LLMClient(prod, transport=FakeTransport(), api_keys={})
     assert [p.name for p in client.providers] == ["groq"]
     assert client.providers[0].key_envs == GROQ_ENVS
+
+
+# ---------------- provider-suggested retry wait ----------------
+
+from src.llm.llm_client import parse_retry_after  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    "message, expected",
+    [
+        ("Limit 8000, Used 6066. Please try again in 15.704999999s. Need more tokens?", 15.704999999),
+        ("Please try again in 1m3.5s.", 63.5),
+        ("Please try again in 850ms", 0.85),
+        ("Please try again in 2h1m", 7260.0),
+        ("quota exceeded", None),
+        ("", None),
+    ],
+)
+def test_parse_retry_after(message, expected):
+    got = parse_retry_after(message)
+    assert got == pytest.approx(expected) if expected is not None else got is None
+
+
+def rate_limit_429(seconds):
+    return HttpResponse(429, {"error": {"message": f"Rate limit reached (TPM). Please try again in {seconds}s. Need more tokens?"}})
+
+
+def test_429_waits_the_provider_suggested_time_on_a_single_key(cfg, tm):
+    t = FakeTransport(gemini=[rate_limit_429("15.7"), gemini_ok()])
+    assert make_client(cfg, tm, t).complete("question") == "gemini answer"
+    assert tm.sleeps == [pytest.approx(15.7)]  # not the 2 s default backoff
+
+
+def test_suggested_wait_is_capped_by_config(cfg, tm):
+    t = FakeTransport(gemini=[rate_limit_429("600"), gemini_ok()])
+    make_client(cfg, tm, t).complete("question")
+    assert tm.sleeps == [cfg.llm.max_retry_wait_s]
+
+
+def test_short_hint_never_shortens_the_exponential_backoff(cfg, tm):
+    t = FakeTransport(gemini=[rate_limit_429("0.1"), gemini_ok()])
+    make_client(cfg, tm, t).complete("question")
+    assert tm.sleeps == [cfg.llm.backoff_base_s]

@@ -14,6 +14,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import socket
 import time
 import urllib.error
@@ -29,6 +30,19 @@ logger = logging.getLogger("finrag.llm")
 _RETRYABLE_STATUS = {408, 429}  # plus every 5xx
 _MAX_ERROR_CHARS = 300
 _USER_AGENT = "finrag/0.1"  # some edges reject urllib's default agent
+
+
+_RETRY_IN = re.compile(r"try again in\s+((?:\d+(?:\.\d+)?\s*(?:ms|s|m|h)\s*)+)", re.IGNORECASE)
+_DURATION_PART = re.compile(r"(\d+(?:\.\d+)?)\s*(ms|s|m|h)", re.IGNORECASE)
+_UNIT_SECONDS = {"ms": 0.001, "s": 1.0, "m": 60.0, "h": 3600.0}
+
+
+def parse_retry_after(message: str) -> float | None:
+    """Seconds from a provider hint like "Please try again in 1m3.5s"; None if there is none."""
+    m = _RETRY_IN.search(message or "")
+    if not m:
+        return None
+    return sum(float(n) * _UNIT_SECONDS[u.lower()] for n, u in _DURATION_PART.findall(m.group(1)))
 
 
 class LLMError(RuntimeError):
@@ -248,7 +262,9 @@ class LLMClient:
         url_tpl = self.cfg.llm.endpoints.__dict__[p.name]
         max_attempts = 1 + self.cfg.llm.max_retries
         attempts, reason = 0, "unknown"
+        hint: float | None = None
         while attempts < max_attempts:
+            hint = None
             env = self._pick_key(p)
             url, headers, payload = build(url_tpl, p, self._key_value(env), prompt, system, self.cfg)
             self._throttle(env, p.rpm)
@@ -268,6 +284,7 @@ class LLMClient:
                     raise _ProviderFailed("empty response")
                 reason = f"HTTP {resp.status}" + self._error_detail(resp.body)
                 if resp.status == 429:
+                    hint = parse_retry_after(self._raw_error_message(resp.body))
                     self._cooldown_until[env] = self._clock() + self.cfg.llm.key_cooldown_s
                     if self._has_other_fresh_key(p, env):
                         logger.warning("%s key %s rate limited; rotating to the next key", p.name, env)
@@ -276,14 +293,22 @@ class LLMClient:
                     raise _ProviderFailed(reason)
             attempts += 1
             if attempts < max_attempts:
-                self._sleep(self.cfg.llm.backoff_base_s * 2 ** (attempts - 1))
+                wait = self.cfg.llm.backoff_base_s * 2 ** (attempts - 1)
+                if hint is not None:  # honor the provider's own "try again in" (capped, never shorter)
+                    wait = min(max(wait, hint), self.cfg.llm.max_retry_wait_s)
+                self._sleep(wait)
         raise _ProviderFailed(f"{reason} after {attempts} attempts")
+
+    @staticmethod
+    def _raw_error_message(body: dict) -> str:
+        error = body.get("error") if isinstance(body, dict) else None
+        message = error.get("message") if isinstance(error, dict) else None
+        return message if isinstance(message, str) else ""
 
     def _error_detail(self, body: dict) -> str:
         """Provider error message for diagnostics: keys redacted, truncated."""
-        error = body.get("error") if isinstance(body, dict) else None
-        message = error.get("message") if isinstance(error, dict) else None
-        if not isinstance(message, str) or not message.strip():
+        message = self._raw_error_message(body)
+        if not message.strip():
             return ""
         for p in self.providers:
             for env in p.key_envs:
