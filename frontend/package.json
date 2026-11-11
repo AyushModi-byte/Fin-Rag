@@ -1,6 +1,7 @@
 {
   "name": "finrag-frontend",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Static frontend for the FinRag API. No build step, no runtime dependencies.",
   "scripts": {

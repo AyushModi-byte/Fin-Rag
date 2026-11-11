@@ -259,4 +259,4 @@ Dockerfile, docker-compose.yaml, .env.example
 
 Questions and gold answers come from [FinanceBench](https://github.com/patronus-ai/financebench) (Patronus AI); the filings
 are public SEC documents. This project is not affiliated with the companies, Patronus AI or the SEC and is not financial
-advice. No licence file has been chosen yet, so the code is currently all rights reserved by default.
+advice. Released under the [MIT licence](LICENSE).
