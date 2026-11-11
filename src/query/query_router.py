@@ -1,7 +1,7 @@
 """Rule-based query routing: detect company and fiscal year in the question text.
 
-No LLM fallback (project rule: no extra LLM calls in pipelines without asking). A question that names
-no known company is treated as out of scope.
+No LLM fallback (a deliberate choice: no extra LLM calls in the pipeline, which keeps the free quota for
+answers). A question that names no known company is treated as out of scope.
 """
 import re
 from dataclasses import dataclass, field

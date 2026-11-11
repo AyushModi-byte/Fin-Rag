@@ -261,7 +261,7 @@ src/cache, security, observability, api                     semantic cache, ACL 
 src/pipelines, jobs, eval                                   orchestration, CLI jobs, metrics
 frontend/              web UI: plain HTML, CSS and JS, no framework, no build step; served by the API
 tests/                 Python tests          frontend/test   Node tests
-docs/                  ARCHITECTURE.md, DEPLOYMENT.md, experiments.md, plan and prompts
+docs/                  ARCHITECTURE.md, DEPLOYMENT.md, experiments.md (every measurement), images/
 Dockerfile, docker-compose.yaml, .env.example
 ```
 
