@@ -1,0 +1,10 @@
+{
+  "name": "finrag-frontend",
+  "private": true,
+  "type": "module",
+  "description": "Static frontend for the FinRag API. No build step, no runtime dependencies.",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "serve": "node scripts/serve.mjs"
+  }
+}

@@ -16,3 +16,4 @@ tests
 .cache/index/*
 !.cache/index/v2
 .cache/index/v2/shards
+frontend

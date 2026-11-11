@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FinRag | Answers from SEC 10-K filings</title>
+  <meta name="description" content="Ask a question about a company's SEC 10-K filing and get an answer that cites the page it came from.">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b0d0c">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="config.js"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#ask-label">Skip to the question box</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="#top" aria-label="FinRag, home">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect width="24" height="24" rx="5" fill="#4ade80"/>
+          <path d="M6 18V10h2.5v8zM10.75 18V6h2.5v12zM15.5 18v-5H18v5z" fill="#04140a"/>
+        </svg>
+        FinRag
+      </a>
+      <nav class="nav" aria-label="Sections">
+        <a href="#coverage">Coverage</a>
+        <a href="#how">How it works</a>
+        <a href="#quality">Quality and limits</a>
+      </nav>
+      <span id="status" class="status" data-state="starting" role="status">
+        <span class="dot" aria-hidden="true"></span><span id="status-text">Connecting</span>
+      </span>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap">
+        <p class="eyebrow">SEC 10-K question answering</p>
+        <h1>Ask the filings.</h1>
+        <p class="lede">Answers come only from the filing text and cite the page they used. When the filings don't say, you get "I don't know".</p>
+
+        <form id="ask" class="ask" novalidate>
+          <label id="ask-label" for="q">Your question</label>
+          <textarea id="q" name="question" rows="3" maxlength="2000" required
+            placeholder="e.g. What was Adobe's total revenue in fiscal year 2022?"
+            aria-describedby="q-hint q-count"></textarea>
+          <div class="form-row">
+            <p id="q-hint" class="hint">Name the company and the fiscal year. Send with <kbd>Ctrl</kbd> or <kbd>&#8984;</kbd> + <kbd>Enter</kbd>.</p>
+            <span id="q-count" class="count" aria-live="off">0 / 2000</span>
+            <button id="submit" class="btn" type="submit">Ask</button>
+          </div>
+        </form>
+
+        <div class="examples" role="group" aria-label="Example questions">
+          <span>Try:</span>
+          <button type="button" class="chip" data-q="What was Adobe's total revenue in fiscal year 2022?">Adobe revenue, FY2022</button>
+          <button type="button" class="chip" data-q="Is Verizon a capital intensive business based on FY 2022 data?">Is Verizon capital intensive?</button>
+          <button type="button" class="chip" data-q="What were 3M's capital expenditures in fiscal year 2018?">3M capex, FY2018</button>
+          <button type="button" class="chip" data-q="How much cash did PepsiCo generate from operating activities in fiscal year 2022?">PepsiCo operating cash flow, FY2022</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap">
+      <section id="result" class="result" tabindex="-1" aria-live="polite" aria-busy="false" aria-label="Answer"></section>
+    </div>
+
+    <section id="coverage" class="section">
+      <div class="wrap">
+        <h2>Coverage</h2>
+        <p class="intro">A small, fixed subset: 22 annual reports from 10 companies. Questions about anything else get "I don't know" without a model call.</p>
+        <ul id="filings" class="filings" aria-label="Covered filings"></ul>
+      </div>
+    </section>
+
+    <section id="how" class="section">
+      <div class="wrap">
+        <h2>How it works</h2>
+        <p class="intro">Retrieval first, generation second. The model never sees anything that was not retrieved from the filing.</p>
+        <ol class="steps">
+          <li><strong>Route</strong><span>Finds the company and fiscal year in your question and restricts the search to that filing.</span></li>
+          <li><strong>Retrieve</strong><span>Combines meaning-based and keyword search over the filing's pages and tables, and keeps the best 8 passages.</span></li>
+          <li><strong>Answer</strong><span>A language model answers from those passages only, cites each page it used, or says it doesn't know.</span></li>
+          <li><strong>Check</strong><span>Every citation opens the exact passage, so you can verify the number against the source.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="quality" class="section">
+      <div class="wrap">
+        <h2>Quality and limits</h2>
+        <p class="intro">Measured on 29 held-out questions and 29 development questions from the FinanceBench set. Numbers as measured, not rounded up.</p>
+        <div class="table-scroll">
+          <table class="grid-table">
+            <thead><tr><th scope="col">Measure</th><th scope="col" class="num">Test (n=29)</th><th scope="col" class="num">Dev (n=29)</th></tr></thead>
+            <tbody>
+              <tr><td>Right page in the top 5 (recall@5)</td><td class="num">0.552</td><td class="num">0.586</td></tr>
+              <tr><td>Answer accuracy (model-judged)</td><td class="num">0.414</td><td class="num">0.690</td></tr>
+              <tr><td>Faithfulness to the passages</td><td class="num">0.842</td><td class="num">0.940</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="footnote">Test numbers were measured with 5 passages per answer. The live setting (8 passages) was only evaluated on the dev set, which is also the set it was tuned on, so expect results closer to the test column.</p>
+        <ul class="limits">
+          <li><strong>Check the cited page.</strong> On the held-out test, more than half of the answers (17 of 29) were judged wrong or "I don't know". Treat an answer as a pointer to the right passage, not as a verified figure.</li>
+          <li><strong>Small sample.</strong> 29 questions per column: one question moves a score by 0.03.</li>
+          <li><strong>Model-judged scoring.</strong> The same model family answers and grades; no human review.</li>
+          <li><strong>Multi-page questions.</strong> Ratios that need two statements often fail when only one page is retrieved.</li>
+          <li><strong>Scope.</strong> Ten companies, 22 filings, text and tables only (no scanned pages or charts).</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>FinRag is a portfolio project. It is not financial advice and is not affiliated with the companies or the SEC.</p>
+      <p>Questions are processed by a third-party language model (Groq). Do not enter personal or confidential information. Request logs keep a hashed client label, never your address or your question.</p>
+    </div>
+  </footer>
+</body>
+</html>

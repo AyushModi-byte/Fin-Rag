@@ -371,3 +371,24 @@ def test_query_response_lists_the_source_page_of_each_context(tmp_path):
     pipe, _, _ = make_pipeline(cfg, hits=[make_hit("h0", page=7), make_hit("h1", page=9)])
     body = TestClient(create_app(pipeline=pipe, cfg=cfg)).post("/query", json={"question": "3M FY2018 capex?"}).json()
     assert [s["page"] for s in body["sources"]] == [7, 9] and len(body["sources"]) == len(body["contexts"])
+
+
+def test_cache_is_dropped_when_any_answer_affecting_setting_changes(tmp_path):
+    # found by the UI: a result cached with top_n 5 and the old citation parser was served after the change
+    for section, key, value in [
+        ("rerank", "top_n", 3), ("rerank", "enabled", True), ("retrieval", "bm25_weight", 0.9),
+        ("retrieval", "top_k", 7), ("generation", "expand_tables", True), ("cache", "version", 999),
+    ]:
+        cfg = cfg_for(tmp_path)
+        SemanticCache(cfg, FakeEmbedder({})).put("q", sample_result())
+        assert SemanticCache(cfg, FakeEmbedder({})).get("q") is not None  # same settings: kept
+        setattr(getattr(cfg, section), key, value)
+        assert SemanticCache(cfg, FakeEmbedder({})).get("q") is None, f"{section}.{key}"
+
+
+def test_cache_is_kept_when_unrelated_settings_change(tmp_path):
+    cfg = cfg_for(tmp_path)
+    SemanticCache(cfg, FakeEmbedder({})).put("q", sample_result())
+    cfg.api.rate_limit.per_minute = 99
+    cfg.data.log_file = "elsewhere.log"
+    assert SemanticCache(cfg, FakeEmbedder({})).get("q") is not None

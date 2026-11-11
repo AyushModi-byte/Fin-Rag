@@ -3,8 +3,9 @@
 In memory plus a JSON file (`cache.path`). A similarity hit also needs the same `scope` (company and
 fiscal year found by the router): "FY2018 revenue" and "FY2019 revenue" embed almost identically but
 have different answers. The file is dropped when the index version, prompt version or LLM model
-changes (the `namespace`), so a stale answer is never served after a change.
+changes (the `namespace`, see namespace()), so a stale answer is never served after a change.
 """
+import hashlib
 import json
 import logging
 import threading
@@ -15,6 +16,23 @@ import numpy as np
 from src.schemas.models import QueryResult
 
 log = logging.getLogger("finrag.cache")
+
+
+def _plain(obj):
+    """SimpleNamespace config -> plain dicts, for hashing."""
+    return {k: _plain(v) for k, v in vars(obj).items()} if hasattr(obj, "__dict__") else obj
+
+
+def namespace(cfg) -> str:
+    """Fingerprint of everything that shapes an answer. A cached result is only valid for the settings it was
+    made with: index, retrieval, rerank (incl. top_n = how many passages the model sees), generation, model
+    and `cache.version` (bump it when the result format or the citation parser changes)."""
+    parts = {
+        "index": cfg.index.version, "retrieval": _plain(cfg.retrieval), "rerank": _plain(cfg.rerank),
+        "generation": _plain(cfg.generation), "model": cfg.llm.primary.model, "temperature": cfg.llm.temperature,
+        "version": cfg.cache.version,
+    }
+    return hashlib.sha256(json.dumps(parts, sort_keys=True, default=str).encode()).hexdigest()[:16]
 
 
 def _norm(q: str) -> str:
@@ -30,7 +48,7 @@ class SemanticCache:
         self.threshold: float = cfg.cache.threshold
         self.path = Path(cfg.cache.path)
         self.embedder = embedder
-        self.namespace = f"{cfg.index.version}|{cfg.generation.prompt_version}|{cfg.llm.primary.model}"
+        self.namespace = namespace(cfg)
         self._lock = threading.Lock()
         self._entries: list[dict] = []  # {q, scope, vec|None, result}
         self._load()

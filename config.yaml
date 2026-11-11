@@ -25,7 +25,7 @@ llm:
   cache_dir: .cache/llm
   budget_warn_ratio: 0.8  # stop and tell the user at 80% of a daily budget
 generation: {expand_tables: false, max_context_tokens: 4000, prompt_version: grounded_v1}
-cache: {enabled: true, threshold: 0.95, path: .cache/semantic_cache.json}
+cache: {enabled: true, threshold: 0.95, path: .cache/semantic_cache.json, version: 2}   # bump version when the result format or citation parser changes
 acl: {default: "*", users: {}}   # users: {alice: [Adobe, 3M]}; "*" = every company
 api:
   host: 127.0.0.1
