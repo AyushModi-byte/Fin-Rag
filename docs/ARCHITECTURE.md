@@ -47,7 +47,8 @@ question -> security/acl + redact -> cache/semantic_cache (hit? return)
 | eval | rag_metrics.py | recall@k, MRR, LLM-judge accuracy, faithfulness |
 | observability | tracing.py | `trace(stage, timings)` records per-stage ms into `latency_ms` and writes one bare JSON line per stage to `logs/app.log` |
 | security | acl.py | `allowed_companies(user)` from `acl` in config (`*` = all); `redact_pii` (e-mails, phones) applied to the question before logs, cache, retriever and LLM. A restricted user must name a permitted company (the router detects it even when `use_router_filter` is off), otherwise `I don't know` with no retrieval and no LLM call |
-| api | routes.py | `POST /query {question, user?}` (422 on blank or over `api.max_question_chars`, 503 on LLM budget/outage), `GET /health`; pipeline built on first query; one query at a time (lock) |
+| api | routes.py | `POST /query {question, user?}` (422 blank/over `api.max_question_chars`, 503 on LLM budget/outage), `GET /health`; pipeline built on first query; one query at a time (lock). Public-API guard in front of `/query`: optional API key (401), per-IP sliding-window limit (429 + `Retry-After`), daily global cap (503 + `Retry-After`), CORS for `api.cors_origins`, a log line per call with a hashed client label (no IP, no question) |
+| security | rate_limit.py | `RateLimiter` (per minute / per day per client, memory bounded), `DailyCap` (per UTC day, persisted to `api.usage_file`), `client_ip` (entry `trusted_proxy_hops` from the right of X-Forwarded-For; left entries are client-forgeable), `client_label` (salted hash) |
 | pipelines | index_pipeline.py, query_pipeline.py | Orchestration only, no logic |
 | jobs | prepare_data.py, index_corpus.py, eval_nightly.py | CLI entry points |
 | jobs | bench_embed.py, pilot_bakeoff.py, compare_indexes.py, fusion_sweep.py, rerank_dev.py | Offline measurement tools (no LLM calls) behind the experiments log |
@@ -117,7 +118,7 @@ llm:
   budget_warn_ratio: 0.8
 cache: {enabled: true, threshold: 0.95, path: .cache/semantic_cache.json}
 acl: {default: "*", users: {}}
-api: {host: 127.0.0.1, port: 8000, max_question_chars: 2000}
+api: {host: 127.0.0.1, port: 8000, max_question_chars: 2000, cors_origins: [], require_api_key: false, trusted_proxy_hops: 1, rate_limit: {per_minute: 5, per_day: 40, max_clients: 10000}, daily_global_cap: 250, usage_file: .cache/api_usage.json}   # + env names for key, CORS and log salt, see config.yaml
 eval: {dev_ratio: 0.5, seed: 42, n_companies: 10, min_questions: 50, recall_k: 5, runs_dir: data/eval/runs, judge_max_output_tokens: 4096}
 ```
 

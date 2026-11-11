@@ -60,6 +60,7 @@ def cfg_for(tmp_path, acl_users=None):
     cfg.cache.enabled = True
     cfg.cache.path = str(tmp_path / "semantic_cache.json")
     cfg.data.log_file = str(tmp_path / "app.log")
+    cfg.api.usage_file = str(tmp_path / "usage.json")  # never touch the real daily counter in tests
     if acl_users is not None:
         cfg.acl.users = type(cfg.acl.users)(**acl_users)
     return cfg
