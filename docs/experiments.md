@@ -138,9 +138,15 @@ Candidates are the current hybrid results (mxbai-large, BM25 weight 0.25, router
 
 ## Final (test split, run once)
 
+Run `20261111T081204_test.json` (2026-11-11, `--split test --final`, config = experiment 12 unchanged, run once, n=29, errors 0). Numbers exactly as measured.
+
 | Recall@5 | MRR | Accuracy | Faithfulness | p50 | p95 |
 |----------|-----|----------|--------------|-----|-----|
-| | | | | | |
+| 0.552 (16/29) | 0.324 | 0.414 (12/29) | 0.842 (n=19) | 2620 ms | 10081 ms |
+
+- "I don't know" on 10 of 29 questions (dev: 7); faithfulness is scored over the 19 answered ones only. Stage p50: retrieve 285 ms, llm 2329 ms. 65 Groq calls and about 104,000 tokens in total over the three keys (37,754 / 33,414 / 32,797), 0 errors, all calls uncached, so the latency covers all 29 questions.
+- Dev to test: recall@5 0.586 -> 0.552, MRR 0.452 -> 0.324, accuracy 0.586 -> 0.414, faithfulness 0.930 -> 0.842. Every metric is lower on test. The BM25 weight was chosen on dev, and with n=29 one question is 0.034, so a drop of 5 questions in accuracy is larger than the usual +/-1 to 2 question run-to-run noise but the test split is also a different set of questions; no cause was tested, and nothing was tuned after this run.
+- Against the plan's targets (recall@5 >= 0.80, accuracy 60-75%, faithfulness >= 0.90) the test numbers miss all three; p50 under 4 s is met.
 
 ## v1 best vs v2 baseline vs final (dev split, n=29, one run each, numbers exactly as measured)
 
@@ -155,7 +161,7 @@ Candidates are the current hybrid results (mxbai-large, BM25 weight 0.25, router
 
 Final config: v2 index (chunker v2: embedder-tokenizer sizing, table row groups, prefix `{company} FY{year} 10-K | page | heading | units`, child 300 / overlap 40 / cap 480; `mixedbread-ai/mxbai-embed-large-v1` 1024-d, no query prefix; BM25 v2 with stemming), router with year fix, `retrieval.min_chunk_tokens: 15`, weighted fusion 1.0 dense : 0.25 BM25 with `rrf_k: 60`, top_k 20, rerank off, top_n 5, prompt `grounded_v1`, no parent expansion. Answers, accuracy judge and faithfulness judge all by Groq `openai/gpt-oss-120b`.
 
-Caveats: n=29, so one question is 0.034 of recall or accuracy; the BM25 weight was chosen on this same dev set (3 values tried); accuracy and faithfulness come from an LLM judge and an answerer with some run-to-run noise (an unchanged config swapped +1/-1 questions in exp 9). The test split has NOT been run (Task 11).
+Caveats: n=29, so one question is 0.034 of recall or accuracy; the BM25 weight was chosen on this same dev set (3 values tried); accuracy and faithfulness come from an LLM judge and an answerer with some run-to-run noise (an unchanged config swapped +1/-1 questions in exp 9). The test split was run once afterwards (see Final above): all four metrics were lower.
 
 ## Failure analysis, final config (12 wrong dev answers; run `20261110T140849_dev.json`, offline, no LLM calls)
 

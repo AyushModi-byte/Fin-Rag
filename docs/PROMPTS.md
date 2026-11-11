@@ -2,9 +2,9 @@
 
 ## Where we are (updated 2026-11-10)
 
-Tasks 1-10 are DONE (Task 10: SemanticCache, tracing, ACL, PII redaction, FastAPI `/query` + `/health`, `main.py`; 232 tests pass). **Resume at Task 11** (Docker, final test-split run, README, deploy). Nothing for Task 11 exists yet (no `Dockerfile`, `docker-compose.yaml` or `README.md`).
+Tasks 1-11 are DONE (Task 11: Dockerfile + docker-compose.yaml verified, test split run once, README). Not done from the original plan: Hugging Face Spaces deploy and the `v1.0` tag (outward-facing; waiting for the user). Do not tune after the test run.
 
-Last kept dev result, which Task 10 re-checked (experiment 12, run `20261110T140849_dev.json`; re-run for Task 10 gave the identical four numbers, experiment 17): recall@5 0.586, MRR 0.452, accuracy 0.586, faithfulness 0.930. The test split has NOT been run; it is reserved for Task 11.
+Last kept dev result, which Task 10 re-checked (experiment 12, run `20261110T140849_dev.json`; re-run for Task 10 gave the identical four numbers, experiment 17): recall@5 0.586, MRR 0.452, accuracy 0.586, faithfulness 0.930. The test split was run once in Task 11 (recall@5 0.552, MRR 0.324, accuracy 0.414, faithfulness 0.842); it must not be used for tuning.
 
 Things the Task 10 and 11 prompts below do not say, but you should know:
 - Run pytest with the real exit status (no piping): 232 tests pass at this point. FastAPI/uvicorn are now in `requirements.txt` (the `.venv` needed `pip install`).

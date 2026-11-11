@@ -1,0 +1,1346 @@
+{
+  "summary": {
+    "split": "test",
+    "limit": null,
+    "n": 29,
+    "completed": 29,
+    "stopped_early": false,
+    "errors": 0,
+    "idk": 10,
+    "recall_at_5": 0.5517241379310345,
+    "mrr": 0.3236218283632077,
+    "accuracy": 0.41379310344827586,
+    "faithfulness": 0.8419457735247209,
+    "faithfulness_n": 19,
+    "latency_n": 29,
+    "latency_p50_ms": 2619.508699979633,
+    "latency_p95_ms": 10080.99809999112,
+    "stage_p50_ms": {
+      "total": 2619.508699979633,
+      "retrieve": 284.83109996886924,
+      "rerank": 0.0,
+      "llm": 2329.008899978362
+    },
+    "served_by": {
+      "groq": 65
+    },
+    "generation_source": {
+      "groq": 27,
+      "none": 2
+    },
+    "config": {
+      "router": true,
+      "rerank": false,
+      "top_k": 20,
+      "top_n": 5,
+      "child_tokens": 300,
+      "context_prefix": true,
+      "embedding_model": "mixedbread-ai/mxbai-embed-large-v1",
+      "primary": "openai/gpt-oss-120b",
+      "fallback": null
+    },
+    "run_file": "data\\eval\\runs\\20261111T081204_test.json"
+  },
+  "questions": [
+    {
+      "id": "financebench_id_00216",
+      "question": "Does Verizon have a reasonably healthy liquidity profile based on its quick ratio for FY 2022? If the quick ratio is not relevant to measure liquidity, please state that and explain why.",
+      "gold_answer": "No. The quick ratio was approximately 0.54 for Verizon. It indicated that Verizon does not have a healthy liquidity profile.",
+      "doc_id": "VERIZON_2022_10K",
+      "gold_pages": [
+        56
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 37
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 103
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 88
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 38
+        },
+        {
+          "doc_id": "VERIZON_2022_10K",
+          "page": 49
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 773.7249000347219,
+        "rerank": 0.0,
+        "llm": 1380.6063000229187,
+        "total": 2174.2434999905527
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.07692307692307693,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_00222",
+      "question": "Does AMD have a reasonably healthy liquidity profile based on its quick ratio for FY22? If the quick ratio is not relevant to measure liquidity, please state that and explain why.",
+      "gold_answer": "Yes. The quick ratio is 1.57, calculated as (cash and cash equivalents+Short term investments+Accounts receivable, net+receivables from related parties)/ (current liabilities).",
+      "doc_id": "AMD_2022_10K",
+      "gold_pages": [
+        56
+      ],
+      "answer": "**Quick\u2011ratio calculation for FY\u202f2022 (year ended\u202fDecember\u202f31,\u202f2022)**  \n\n| Item | Amount (in\u202f$\u202fmillion) | Source |\n|------|----------------------|--------|\n|Cash and cash equivalents|4,835|[AMD_2022_10K p.56] |\n|Short\u2011term investments|1,020|[AMD_2022_10K p.56] |\n|Accounts receivable, net|4,126|[AMD_2022_10K p.56] |\n|**Quick assets (cash\u202f+\u202fshort\u2011term\u202finvestments\u202f+\u202freceivables)**|**9,981**|sum of above |\n|Accounts payable|2,493|[AMD_2022_10K p.56] |\n|Payables to related parties|463|[AMD_2022_10K p.56] |\n|Accrued liabilities|3,077|[AMD_2022_10K p.56] |\n|Current portion of long\u2011term debt, net|0|[AMD_2022_10K p.56] |\n|**Current liabilities (excluding inventories)**|**6,033**|2,493\u202f+\u202f463\u202f+\u202f3,077 |\n\n**Quick ratio**\n\n\\[\n\\text{Quick ratio} = \\frac{\\text{Quick assets}}{\\text{Current liabilities}} = \\frac{9,981}{6,033}\n\\]\n\nStep\u2011by\u2011step:\n\n1. Add quick assets: 4,835\u202f+\u202f1,020\u202f+\u202f4,126\u202f=\u202f9,981\u202fmillion.  \n2. Add current liabilities (excluding inventories): 2,493\u202f+\u202f463\u202f+\u202f3,077\u202f=\u202f6,033\u202fmillion.  \n3. Divide: 9,981\u202f\u00f7\u202f6,033\u202f\u2248\u202f1.66.\n\n**Result:** The quick ratio for FY\u202f2022 is **approximately 1.66**.\n\n### Interpretation\nA quick ratio above\u202f1.0 indicates that the company can meet its short\u2011term obligations with its most liquid assets (cash, short\u2011term investments, and receivables) without relying on inventory sales. AMD\u2019s ratio of ~1.66 suggests a **reasonably healthy liquidity profile** for FY\u202f2022.\n\n### Relevance of the Quick Ratio\nThe quick ratio is a standard measure of short\u2011term liquidity because it focuses on assets that can be converted to cash quickly. While other metrics (e.g., cash\u2011flow coverage, current ratio) also provide insight, the quick ratio is **relevant** for assessing AMD\u2019s ability to satisfy near\u2011term liabilities. Therefore, it is appropriate to use it in evaluating AMD\u2019s liquidity.",
+      "citations": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 56
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 51
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 51
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 56
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 53
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 79
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 301.30130000179633,
+        "rerank": 0.0,
+        "llm": 3575.2260999870487,
+        "total": 3877.6134999934584
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.3333333333333333,
+      "correct": false,
+      "faithfulness": 0.6666666666666666
+    },
+    {
+      "id": "financebench_id_00476",
+      "question": "Which debt securities are registered to trade on a national securities exchange under American Express' name as of 2022?",
+      "gold_answer": "There are none",
+      "doc_id": "AMERICANEXPRESS_2022_10K",
+      "gold_pages": [
+        1
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 119
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 1
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 1
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 120
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 125
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 265.0611000135541,
+        "rerank": 0.0,
+        "llm": 1294.6618999703787,
+        "total": 1560.135599982459
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.5,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_00494",
+      "question": "What production rate changes is Boeing forecasting for FY2023?",
+      "gold_answer": "Boeing forecasts an increase in the production rates for the 737, 777X and 787 aircrafts in 2023.",
+      "doc_id": "BOEING_2022_10K",
+      "gold_pages": [
+        9
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [],
+      "latency_ms": {
+        "retrieve": 263.23639997281134,
+        "rerank": 0.0,
+        "llm": 0.0,
+        "total": 263.5176999610849
+      },
+      "generation_source": "none",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_00499",
+      "question": "Is 3M a capital-intensive business based on FY2022 data?",
+      "gold_answer": "No, the company is managing its CAPEX and Fixed Assets pretty efficiently, which is evident from below key metrics:\nCAPEX/Revenue Ratio: 5.1%\nFixed assets/Total Assets: 20%\nReturn on Assets= 12.4%",
+      "doc_id": "3M_2022_10K",
+      "gold_pages": [
+        48,
+        50,
+        52
+      ],
+      "answer": "Yes. 3M\u2019s FY\u202f2022 discussion emphasizes substantial investment in property, plant and equipment and ongoing capital spending, which are hallmarks of a capital\u2011intensive business. The filing notes that \u201cInvestments in property, plant and equipment enable growth across many diverse markets\u201d\u202f[3M_2022_10K p.39] and that \u201cCapital spending is discussed in more detail later in MD&A\u201d\u202f[3M_2022_10K p.34]. Moreover, the company projects 2023 capital spending of roughly\u202f$1.5\u202fbillion\u202fto\u202f$1.8\u202fbillion, underscoring the scale of its capital outlays\u202f[3M_2022_10K p.39]. These statements indicate that 3M relies heavily on significant capital expenditures, confirming that it is a capital\u2011intensive business.",
+      "citations": [
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 39
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 34
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 37
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 39
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 15
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 34
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 40
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 266.87990000937134,
+        "rerank": 0.0,
+        "llm": 2465.6969000352547,
+        "total": 2732.940800022334
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.09090909090909091,
+      "correct": false,
+      "faithfulness": 0.6666666666666666
+    },
+    {
+      "id": "financebench_id_00517",
+      "question": "Are there any product categories / service categories that represent more than 20% of Boeing's revenue for FY2022?",
+      "gold_answer": "Yes. Boeing has product and service categories that represent more than 20% of Boeing's revenue for FY2022. These categories are Commercial Airplanes which comprises 39% of total revenue, Defence which comprises 35% of total revenue and Services which comprises 26% of total revenue.",
+      "doc_id": "BOEING_2022_10K",
+      "gold_pages": [
+        62
+      ],
+      "answer": "**Yes.** Three of Boeing\u2019s reportable segments each contributed more than 20\u202f% of the company\u2019s FY\u202f2022 total revenue.\n\n**Step\u2011by\u2011step calculation**\n\n| Segment | FY\u202f2022 revenue (million\u202f$) | Total FY\u202f2022 revenue (million\u202f$) | Percentage of total |\n|---------|----------------------------|-----------------------------------|----------------------|\n| Commercial Airplanes | $25,867 | $66,608 | (25,867\u202f\u00f7\u202f66,608)\u202f\u00d7\u202f100\u202f=\u202f38.9\u202f% |\n| Defense, Space & Security | $23,162 | $66,608 | (23,162\u202f\u00f7\u202f66,608)\u202f\u00d7\u202f100\u202f=\u202f34.8\u202f% |\n| Global Services | $17,611 | $66,608 | (17,611\u202f\u00f7\u202f66,608)\u202f\u00d7\u202f100\u202f=\u202f26.4\u202f% |\n| Boeing Capital | $199 | $66,608 | (199\u202f\u00f7\u202f66,608)\u202f\u00d7\u202f100\u202f=\u202f0.3\u202f% (\u2011) |\n\n**Citations**\n\n- Segment revenues for Commercial Airplanes, Defense, Space & Security, Global Services, Boeing Capital and the total company revenue are shown in the \u201cRevenues\u201d table on page\u202f62 of the 2022 Form\u202f10\u2011K\u202f[BOEING_2022_10K p.62].\n\n**Conclusion**\n\nFor FY\u202f2022, the **Commercial Airplanes**, **Defense, Space & Security**, and **Global Services** segments each represent more than 20\u202f% of Boeing\u2019s total revenue. The Boeing Capital segment does not.",
+      "citations": [
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 62
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 40
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 3
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 116
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 62
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 115
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 271.1877000401728,
+        "rerank": 0.0,
+        "llm": 2090.950400044676,
+        "total": 2362.5637000077404
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.25,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_00591",
+      "question": "Does Adobe have an improving Free cashflow conversion as of FY2022?",
+      "gold_answer": "Yes, the FCF conversion (using net income as the denominator) for Adobe has improved by ~13% from 143% in 2021 to 156% in 2022",
+      "doc_id": "ADOBE_2022_10K",
+      "gold_pages": [
+        57
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 40
+        },
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 65
+        },
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 42
+        },
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 40
+        },
+        {
+          "doc_id": "ADOBE_2022_10K",
+          "page": 65
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 264.8522999952547,
+        "rerank": 0.0,
+        "llm": 921.7001000070013,
+        "total": 1186.9574000011198
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.1,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_00678",
+      "question": "Does Boeing have an improving gross margin profile as of FY2022? If gross margin is not a useful metric for a company like this, then state that and explain why.",
+      "gold_answer": "Yes. Boeing has an improving gross margin profile as of FY2022. Gross profit improved from $3,017 million in FY2021 to $3,502 million in FY2022. Gross margin % improved from 4.8% in FY2021 to 5.3% in FY2022.",
+      "doc_id": "BOEING_2022_10K",
+      "gold_pages": [
+        55
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 24
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 51
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 49
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 49
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 37
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 285.0575000047684,
+        "rerank": 0.0,
+        "llm": 2396.760399977211,
+        "total": 2682.182400021702
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.1111111111111111,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_00684",
+      "question": "Does AMCOR have an improving gross margin profile as of FY2023? If gross margin is not a useful metric for a company like this, then state that and explain why.",
+      "gold_answer": "No. For AMCOR there has been a slight decline in gross margins by 0.8%.",
+      "doc_id": "AMCOR_2023_10K",
+      "gold_pages": [
+        50
+      ],
+      "answer": "**Step\u2011by\u2011step calculation of gross margin**\n\n| Fiscal year | Net sales (\u202f$\u202fmillion) | Gross profit (\u202f$\u202fmillion) | Gross margin = Gross profit \u00f7 Net sales |\n|-------------|-----------------------|---------------------------|------------------------------------------|\n| 2023 | 14,694\u202f$\u202fmillion | 2,725\u202f$\u202fmillion | 2,725\u202f\u00f7\u202f14,694 = 0.1854 \u2192 **18.5\u202f%** |\n| 2022 | 14,544\u202f$\u202fmillion | 2,820\u202f$\u202fmillion | 2,820\u202f\u00f7\u202f14,544 = 0.1939 \u2192 **19.4\u202f%** |\n\n*Sources:* Net sales and gross profit figures are taken from the income\u2011statement summary in the 2023 Form\u202f10\u2011K, page\u202f29\u202f[AMCOR_2023_10K p.29].\n\n**Interpretation**\n\n- Gross margin fell from **19.4\u202f% in FY\u202f2022** to **18.5\u202f% in FY\u202f2023**.  \n- The decline of **0.9 percentage points** indicates that the company\u2019s gross margin profile **did not improve** in FY\u202f2023; it actually deteriorated.\n\n**Is gross margin a useful metric for Amcor?**\n\nGross margin remains a relevant indicator for Amcor because it measures how efficiently the company converts net sales into gross profit after accounting for the direct cost of sales (materials, production, etc.). Even though Amcor operates multiple packaging segments (flexibles, rigid packaging, other) and product mixes can vary, gross margin still provides insight into overall cost\u2011of\u2011sales pressure and pricing power across the business. Therefore, gross margin is a useful metric, and the calculated decline signals a weakening of that aspect of performance in FY\u202f2023.",
+      "citations": [
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 29
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 102
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 72
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 53
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 29
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 35
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 287.6184999477118,
+        "rerank": 0.0,
+        "llm": 2920.0824999716133,
+        "total": 3208.1013999995776
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.0625,
+      "correct": true,
+      "faithfulness": 0.7272727272727273
+    },
+    {
+      "id": "financebench_id_00685",
+      "question": "Are Best Buy's gross margins historically consistent (not fluctuating more than roughly 2% each year)? If gross margins are not a relevant metric for a company like this, then please state that and explain why.",
+      "gold_answer": "Yes, the margins have been consistent, there has been a minor decline of 1.1% in gross margins between FY2022 and FY2023.",
+      "doc_id": "BESTBUY_2023_10K",
+      "gold_pages": [
+        40
+      ],
+      "answer": "**Answer**\n\nYes.\u202fBest\u202fBuy\u2019s gross\u2011profit rates have moved only modestly from year to year\u2014never more than about\u202f2\u202fpercentage points\u2014showing a historically consistent gross\u2011margin profile.\n\n**Step\u2011by\u2011step check of the yearly gross\u2011profit rates**\n\n| Fiscal year | Gross\u2011profit rate |\n|-------------|-------------------|\n| 2015 | 22.4\u202f% |\n| 2016 | 23.3\u202f% |\n| 2017 | 24.0\u202f% |\n| 2018 | 23.4\u202f% |\n| 2019 | 23.2\u202f% |\n\n(Source: BESTBUY\u202f2019\u202f10\u2011K, \u201cGross profit rate\u201d table\u202f\u2014\u202f[ BESTBUY_2019_10K p.26 ]).\n\n**Year\u2011over\u2011year changes**\n\n1. 2015\u202f\u2192\u202f2016:\u202f23.3\u202f%\u202f\u2013\u202f22.4\u202f%\u202f=\u202f+0.9\u202fpercentage points  \n2. 2016\u202f\u2192\u202f2017:\u202f24.0\u202f%\u202f\u2013\u202f23.3\u202f%\u202f=\u202f+0.7\u202fpercentage points  \n3. 2017\u202f\u2192\u202f2018:\u202f23.4\u202f%\u202f\u2013\u202f24.0\u202f%\u202f=\u202f\u20110.6\u202fpercentage points  \n4. 2018\u202f\u2192\u202f2019:\u202f23.2\u202f%\u202f\u2013\u202f23.4\u202f%\u202f=\u202f\u20110.2\u202fpercentage points  \n\nAll four annual swings are **well under 2\u202f%**, satisfying the \u201croughly\u202f2\u202f% each year\u201d consistency criterion.\n\n**Is gross margin a relevant metric for Best\u202fBuy?**\n\nYes. Gross margin (gross\u2011profit rate) measures the proportion of each sales dollar that remains after covering the cost of goods sold. For a consumer\u2011electronics retailer like Best\u202fBuy, which sells a large volume of physical products, gross margin is a key indicator of:\n\n* **Pricing power and product\u2011mix effectiveness** \u2013 higher\u2011margin items (e.g., large\u2011screen TVs, services, credit\u2011card revenue) lift the overall rate, while lower\u2011margin categories (e.g., tablets, repairs) pull it down.  \n* **Operational efficiency** \u2013 changes in promotional strategy, supplier negotiations, or inventory management directly affect the cost of goods sold and thus the margin.  \n* **Profitability trends** \u2013 because selling, general and administrative expenses are a relatively stable percentage of sales, variations in gross margin drive most of the swing in operating income.\n\nTherefore, gross margin is both a relevant and a useful metric for evaluating Best\u202fBuy\u2019s financial performance, and the data show that it has remained historically consistent, fluctuating by less than 2\u202f% per year.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "BESTBUY_2017_10K",
+          "page": 36
+        },
+        {
+          "doc_id": "BESTBUY_2019_10K",
+          "page": 26
+        },
+        {
+          "doc_id": "BESTBUY_2019_10K",
+          "page": 16
+        },
+        {
+          "doc_id": "BESTBUY_2017_10K",
+          "page": 26
+        },
+        {
+          "doc_id": "BESTBUY_2023_10K",
+          "page": 18
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 315.31839998206124,
+        "rerank": 0.0,
+        "llm": 2697.8796999901533,
+        "total": 3013.677600014489
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": true,
+      "faithfulness": 0.6363636363636364
+    },
+    {
+      "id": "financebench_id_00723",
+      "question": "Does AMEX have an improving operating margin profile as of 2022? If operating margin is not a useful metric for a company like this, then state that and explain why.",
+      "gold_answer": "Performance is not measured through operating margin",
+      "doc_id": "AMERICANEXPRESS_2022_10K",
+      "gold_pages": [
+        96
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [],
+      "latency_ms": {
+        "retrieve": 0.0,
+        "rerank": 0.0,
+        "llm": 0.0,
+        "total": 0.20329997641965747
+      },
+      "generation_source": "none",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_00735",
+      "question": "Has Pepsico reported any materially important ongoing legal battles from FY2022 and FY2021?",
+      "gold_answer": "No, Pepsico is not involved in material legal battles.",
+      "doc_id": "PEPSICO_2022_10K",
+      "gold_pages": [
+        26
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 25
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 469
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 34
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 214
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 70
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 273.7555999774486,
+        "rerank": 0.0,
+        "llm": 806.1426000203937,
+        "total": 1080.293899984099
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_01028",
+      "question": "What are the geographies that American Express primarily operates in as of 2022?",
+      "gold_answer": "United States, EMEA, APAC, and LACC",
+      "doc_id": "AMERICANEXPRESS_2022_10K",
+      "gold_pages": [
+        155
+      ],
+      "answer": "American\u202fExpress operates its business worldwide.  In its 2022 filing the company notes that its payments network spans **about\u202f103 countries and territories**\u202fglobally\u202f[AMERICANEXPRESS_2022_10K p.6].  When describing its geographic considerations, the filing says that the company\u2019s operations are viewed primarily as **the United\u202fStates versus \u201coutside the United\u202fStates\u201d**\u202f[AMERICANEXPRESS_2022_10K p.153].  \n\n**Thus, the primary geographies are:**\n\n1. **The United\u202fStates** (its core domestic market).  \n2. **All other countries and territories worldwide** (approximately 103 locations outside the United\u202fStates).",
+      "citations": [
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 6
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 153
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 6
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 254
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 155
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 153
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 254
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 263.9043999952264,
+        "rerank": 0.0,
+        "llm": 2666.6183000197634,
+        "total": 2930.9469999861903
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.3333333333333333,
+      "correct": false,
+      "faithfulness": 0.8
+    },
+    {
+      "id": "financebench_id_01077",
+      "question": "What are major acquisitions that Best Buy has done in FY2023, FY2022 and FY2021?",
+      "gold_answer": "Best Buy closed two acquisitions, both these companies were already partially owned by Best Buy, but Best Buy acquired all outstanding shares of these two companies during FY 2022: (1) Current Health Ltd and (2) Two Peaks, LLC d/b/a Yardbird Furniture",
+      "doc_id": "BESTBUY_2023_10K",
+      "gold_pages": [
+        51
+      ],
+      "answer": "**FY\u202f2023** \u2013 No acquisitions are reported for fiscal 2023. The investing\u2011activities summary shows \u201cAcquisitions, net of cash acquired\u201d as \u201c\u2011\u201d for the year ended January\u202f28\u202f2023, indicating no acquisition activity was disclosed\u3010BESTBUY_2023_10K p.42\u3011.  \n\n**FY\u202f2022** \u2013 Best\u202fBuy\u2019s major acquisitions in fiscal 2022 were:  \n\n1. **Current Health Ltd.** \u2013 acquisition of all outstanding shares.  \n2. **Two Peaks, LLC d/b/a Yardbird Furniture** (referred to as \u201cYardbird\u201d).  \n\nThese acquisitions are described in the segment discussion for fiscal 2022\u3010BESTBUY_2023_10K p.44\u3011. The investing\u2011activities table also records a $468\u202fmillion acquisition amount for the year ended January\u202f29\u202f2022\u3010BESTBUY_2023_10K p.42\u3011.  \n\n**FY\u202f2021** \u2013 No acquisitions are reported for fiscal 2021. The investing\u2011activities summary lists \u201cAcquisitions, net of cash acquired\u201d as \u201c\u2011\u201d for the year ended January\u202f30\u202f2021, indicating no acquisition activity was disclosed\u3010BESTBUY_2023_10K p.42\u3011.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "BESTBUY_2023_10K",
+          "page": 27
+        },
+        {
+          "doc_id": "BESTBUY_2023_10K",
+          "page": 69
+        },
+        {
+          "doc_id": "BESTBUY_2023_10K",
+          "page": 44
+        },
+        {
+          "doc_id": "BESTBUY_2023_10K",
+          "page": 42
+        },
+        {
+          "doc_id": "BESTBUY_2023_10K",
+          "page": 26
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 295.0361000257544,
+        "rerank": 0.0,
+        "llm": 9785.533100017346,
+        "total": 10080.99809999112
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.08333333333333333,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_01079",
+      "question": "What are major acquisitions that AMCOR has done in FY2023, FY2022 and FY2021?",
+      "gold_answer": "Amcor completed these acquisitions during FY2023:\n-100% equity interest of a flexibles manufacturing company in the Czech Republic\n- 100% equity interest in a medical device packaging manufacturing site in\nShanghai, China.\n-acquisition of a New Zealand-based leading manufacturer of state-of-the-art, automated protein\npackaging machines.",
+      "doc_id": "AMCOR_2023_10K",
+      "gold_pages": [
+        64
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 64
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 64
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 53
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 84
+        },
+        {
+          "doc_id": "AMCOR_2023_10K",
+          "page": 102
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 286.0029000439681,
+        "rerank": 0.0,
+        "llm": 1184.6627999912016,
+        "total": 1471.1996000260115
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 1.0,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_01198",
+      "question": "What drove revenue change as of the FY22 for AMD?",
+      "gold_answer": "In 2022, AMD reported Higher sales of their EPYC server processors, higher semi-custom product sales, and the inclusion of Xilinx embedded product sales",
+      "doc_id": "AMD_2022_10K",
+      "gold_pages": [
+        43
+      ],
+      "answer": "The FY\u202f2022 revenue increase was driven primarily by strong growth in three segments:\n\n* **Data\u2011Center revenue** \u2013 up\u202f64%, mainly from higher sales of AMD\u2019s EPYC\u2122 server processors.  \n* **Gaming revenue** \u2013 up\u202f21%, mainly due to higher semi\u2011custom product sales for gaming consoles.  \n* **Embedded revenue** \u2013 a large jump from the inclusion of Xilinx\u2019s embedded product sales after the acquisition.\n\nThese gains were partially offset by a **10% decline in Client\u2011segment revenue**, which fell because of weaker PC\u2011market demand and inventory corrections.  \n\n**Source:** AMD FY\u202f2022 Form\u202f10\u2011K, \u201cNet revenue for 2022 \u2026 was $23.6\u202fbillion\u2026 The increase in net revenue was driven by a 64% increase in Data Center \u2026 a 21% increase in Gaming \u2026 and a significant increase in Embedded \u2026 This growth was partially offset by a 10% decrease in Client segment revenue\u201d\u202f[AMD_2022_10K p.43].",
+      "citations": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 43
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 52
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 52
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 49
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 48
+        },
+        {
+          "doc_id": "AMD_2022_10K",
+          "page": 43
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 262.82599999103695,
+        "rerank": 0.0,
+        "llm": 2420.799099956639,
+        "total": 2684.0230000088923
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.2,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_01244",
+      "question": "Has CVS Health paid dividends to common shareholders in Q2 of FY2022?",
+      "gold_answer": "Yes, CVS paid a $ 0.55 dividend per share every quarter in FY2022",
+      "doc_id": "CVSHEALTH_2022_10K",
+      "gold_pages": [
+        68
+      ],
+      "answer": "Yes. CVS Health paid a quarterly cash dividend of\u202f$0.55 per share in 2022, and the filing notes that the company \u201chas paid cash dividends every quarter since becoming a public company\u201d\u3010CVSHEALTH_2022_10K p.68\u3011. Therefore a dividend was paid to common shareholders in Q2 of FY\u202f2022.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 68
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 168
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 92
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 113
+        },
+        {
+          "doc_id": "CVSHEALTH_2022_10K",
+          "page": 70
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 277.207900013309,
+        "rerank": 0.0,
+        "llm": 1413.241799979005,
+        "total": 1690.8541999873705
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 1.0,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_01275",
+      "question": "Among operations, investing, and financing activities, which brought in the most (or lost the least) cash flow for Best Buy in FY2023?",
+      "gold_answer": "Best Buy generated the most cash flow from operating activities in FY 2023 ($1.8 bn)",
+      "doc_id": "BESTBUY_2023_10K",
+      "gold_pages": [
+        42
+      ],
+      "answer": "**Step\u2011by\u2011step comparison (all amounts in\u202f$\u202fmillions)**  \n\n1. **Operating activities** \u2013 cash provided:  \n   *Total cash provided by operating activities* =\u202f1,824\u202f[ BESTBUY_2023_10K p.42 ]  \n\n2. **Investing activities** \u2013 cash used:  \n   *Total cash used in investing activities* =\u202f\u2011962\u202f[ BESTBUY_2023_10K p.42 ]  \n\n3. **Financing activities** \u2013 cash used:  \n   *Total cash used in financing activities* =\u202f\u20111,806\u202f[ BESTBUY_2023_10K p.42 ]  \n\n**Comparison**  \n- Operating activities generated a positive cash flow of **$1,824\u202fmillion**.  \n- Investing activities resulted in a cash outflow of **$962\u202fmillion**.  \n- Financing activities resulted in a cash outflow of **$1,806\u202fmillion**.  \n\n**Conclusion**  \nAmong the three categories, **operating activities brought in the most (i.e., the least negative) cash flow for Best\u202fBuy in fiscal\u202f2023**, providing $1,824\u202fmillion of cash.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "BESTBUY_2023_10K",
+          "page": 29
+        },
+        {
+          "doc_id": "BESTBUY_2023_10K",
+          "page": 42
+        },
+        {
+          "doc_id": "BESTBUY_2023_10K",
+          "page": 42
+        },
+        {
+          "doc_id": "BESTBUY_2023_10K",
+          "page": 42
+        },
+        {
+          "doc_id": "BESTBUY_2023_10K",
+          "page": 25
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 276.54699998674914,
+        "rerank": 0.0,
+        "llm": 2473.3974999981,
+        "total": 2750.3590999986045
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.5,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_01290",
+      "question": "Who are the primary customers of Boeing as of FY2022?",
+      "gold_answer": "Boeing's primary customers as of FY2022 are a limited number of commercial airlines and the US government. The US government accounted for 40% of Boeing's total revenues in FY2022.",
+      "doc_id": "BOEING_2022_10K",
+      "gold_pages": [
+        8,
+        10,
+        14
+      ],
+      "answer": "Boeing\u2019s main customers in FY\u202f2022 are the airlines that buy its commercial jetliners and the defense\u2011government customers that purchase its military and space products.\u202fThe 2022 filing notes that the Commercial Airplanes segment \u201cdevelops, produces and markets commercial jet aircraft principally to the **commercial airline industry worldwide**\u201d\u202f[BOEING_2022_10K p.3].\u202fThe company also operates a Defense, Space & Security segment, which serves defense and government customers.\u202fThus, Boeing\u2019s primary customers are commercial airlines and defense/government customers.",
+      "citations": [
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 3
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 83
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 41
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 5
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 22
+        },
+        {
+          "doc_id": "BOEING_2022_10K",
+          "page": 3
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 262.644000002183,
+        "rerank": 0.0,
+        "llm": 2171.3535000453703,
+        "total": 2434.4150999677368
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": false,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_01328",
+      "question": "What is the quantity of restructuring costs directly outlined in Pepsico's income statements for FY2022? If restructuring costs are not explicitly outlined then state 0.",
+      "gold_answer": "Pepsico's restructuring costs in FY2022 amounted to $411 million .",
+      "doc_id": "PEPSICO_2022_10K",
+      "gold_pages": [
+        78
+      ],
+      "answer": "0\u202f[PEPSICO_2022_10K p.64]",
+      "citations": [
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 64
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 79
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 64
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 31
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 55
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 55
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 292.46229998534545,
+        "rerank": 0.0,
+        "llm": 5865.286500018556,
+        "total": 6158.168800000567
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.0,
+      "correct": false,
+      "faithfulness": 0.0
+    },
+    {
+      "id": "financebench_id_01865",
+      "question": "If we exclude the impact of M&A, which segment has dragged down 3M's overall growth in 2022?",
+      "gold_answer": "The consumer segment shrunk by 0.9% organically.",
+      "doc_id": "3M_2022_10K",
+      "gold_pages": [
+        25
+      ],
+      "answer": "The Health\u202fCare segment, whose sales fell about 2\u202f% in U.S. dollars, was the part of the business that pulled overall growth lower in 2022 when the effects of acquisitions and divestitures are set aside.\u202f[3M_2022_10K p.32]",
+      "citations": [
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 32
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 19
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 53
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 32
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 121
+        },
+        {
+          "doc_id": "3M_2022_10K",
+          "page": 21
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 289.5424999878742,
+        "rerank": 0.0,
+        "llm": 2325.297800009139,
+        "total": 2615.2678000507876
+      },
+      "generation_source": "groq",
+      "recall": 0.0,
+      "mrr": 0.07692307692307693,
+      "correct": false,
+      "faithfulness": 0.5
+    },
+    {
+      "id": "financebench_id_01964",
+      "question": "What was the largest liability in American Express's Balance Sheet in 2022?",
+      "gold_answer": "Customer deposits",
+      "doc_id": "AMERICANEXPRESS_2022_10K",
+      "gold_pages": [
+        98
+      ],
+      "answer": "The largest liability on American\u202fExpress\u2019s 2022 balance sheet was **Customer deposits**, amounting to **$110,239\u202fmillion**\u3010AMERICANEXPRESS_2022_10K p.98\u3011.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 98
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 98
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 156
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 139
+        },
+        {
+          "doc_id": "AMERICANEXPRESS_2022_10K",
+          "page": 152
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 260.0732000428252,
+        "rerank": 0.0,
+        "llm": 15049.124199955259,
+        "total": 15309.606099966913
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 1.0,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_02024",
+      "question": "As of FY 2021, how much did Verizon expect to pay for its retirees in 2024?",
+      "gold_answer": "The estimated pension benefits were $1097 million, and the estimated health care and life insurance benefits were $862 million.",
+      "doc_id": "VERIZON_2021_10K",
+      "gold_pages": [
+        63,
+        94
+      ],
+      "answer": "The 2021 filing includes a projection of the amounts Verizon expects to incur for its retirees in future years.  \n\n- For 2024, the projected **Pension Benefits** cost is **$1,097\u202fmillion**\u3010VERIZON_2021_10K p.94\u3011.  \n- For the same year, the projected **Health Care and Life** cost is **$862\u202fmillion**\u3010VERIZON_2021_10K p.94\u3011.  \n\n**Calculation**\n\n\\[\n\\text{Total expected retiree cost for 2024} = \\text{Pension Benefits} + \\text{Health Care and Life}\n\\]\n\\[\n= \\$1,097\\text{ million} + \\$862\\text{ million} = \\$1,959\\text{ million}\n\\]\n\n**Answer:** Verizon expected to pay **$1,959\u202fmillion** for its retirees in 2024.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 17
+        },
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 94
+        },
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 91
+        },
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 89
+        },
+        {
+          "doc_id": "VERIZON_2021_10K",
+          "page": 54
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 273.9560999907553,
+        "rerank": 0.0,
+        "llm": 2345.09670000989,
+        "total": 2619.508699979633
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.5,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_03029",
+      "question": "What is the FY2018 capital expenditure amount (in USD millions) for 3M? Give a response to the question by relying on the details shown in the cash flow statement.",
+      "gold_answer": "$1577.00",
+      "doc_id": "3M_2018_10K",
+      "gold_pages": [
+        60
+      ],
+      "answer": "The FY\u202f2018 capital expenditure (purchases of property, plant and equipment) was **$1,577\u202fmillion**\u30103M_2018_10K p.60\u3011.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "3M_2018_10K",
+          "page": 83
+        },
+        {
+          "doc_id": "3M_2018_10K",
+          "page": 60
+        },
+        {
+          "doc_id": "3M_2018_10K",
+          "page": 60
+        },
+        {
+          "doc_id": "3M_2018_10K",
+          "page": 83
+        },
+        {
+          "doc_id": "3M_2018_10K",
+          "page": 49
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 284.83109996886924,
+        "rerank": 0.0,
+        "llm": 5058.489500021096,
+        "total": 5343.762100033928
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.5,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_03620",
+      "question": "What is the FY2022 unadjusted EBITDA less capex for PepsiCo? Define unadjusted EBITDA as unadjusted operating income + depreciation and amortization [from cash flow statement]. Answer in USD millions. Respond to the question by assuming the perspective of an investment analyst who can only use the details shown within the statement of cash flows and the income statement.",
+      "gold_answer": "$9068.00",
+      "doc_id": "PEPSICO_2022_10K",
+      "gold_pages": [
+        62,
+        64
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 64
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 64
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 54
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 63
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 111
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 377.5855000130832,
+        "rerank": 0.0,
+        "llm": 1774.34440003708,
+        "total": 2152.3912000120617
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 1.0,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_04417",
+      "question": "What is the year end FY2019 total amount of inventories for Best Buy? Answer in USD millions. Base your judgments on the information provided primarily in the balance sheet.",
+      "gold_answer": "$5409.00",
+      "doc_id": "BESTBUY_2019_10K",
+      "gold_pages": [
+        52
+      ],
+      "answer": "The balance sheet shows merchandise inventories of **$5,409\u202fmillion** at February\u202f2\u202f2019 (FY\u202f2019)\u3010BESTBUY_2019_10K p.52\u3011.",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "BESTBUY_2019_10K",
+          "page": 53
+        },
+        {
+          "doc_id": "BESTBUY_2019_10K",
+          "page": 52
+        },
+        {
+          "doc_id": "BESTBUY_2019_10K",
+          "page": 44
+        },
+        {
+          "doc_id": "BESTBUY_2019_10K",
+          "page": 52
+        },
+        {
+          "doc_id": "BESTBUY_2019_10K",
+          "page": 30
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 286.91079997224733,
+        "rerank": 0.0,
+        "llm": 2199.9092999612913,
+        "total": 2487.190699961502
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.5,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_04481",
+      "question": "What is the FY2022 unadjusted EBITDA % margin for PepsiCo? Calculate unadjusted EBITDA using unadjusted operating income and D&A (from cash flow statement). Give a response to the question by relying on the details shown in the statement of cash flows and the P&L statement.",
+      "gold_answer": "16.5%",
+      "doc_id": "PEPSICO_2022_10K",
+      "gold_pages": [
+        62,
+        64
+      ],
+      "answer": "I don't know",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 54
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 111
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 64
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 103
+        },
+        {
+          "doc_id": "PEPSICO_2022_10K",
+          "page": 67
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 348.52340002544224,
+        "rerank": 0.0,
+        "llm": 2208.996400004253,
+        "total": 2557.9600000055507
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.3333333333333333,
+      "correct": false,
+      "faithfulness": null
+    },
+    {
+      "id": "financebench_id_04980",
+      "question": "What is the FY2021 capital expenditure amount (in USD billions) for PepsiCo? Respond to the question by assuming the perspective of an investment analyst who can only use the details shown within the statement of cash flows.",
+      "gold_answer": "$4.60",
+      "doc_id": "PEPSICO_2021_10K",
+      "gold_pages": [
+        63
+      ],
+      "answer": "**Capital expenditure (capital spending) for FY\u202f2021**\n\n1. From the Consolidated Statement of Cash Flows, the line \u201cCapital spending\u201d for 2021 is shown as **(4,625)**\u202f[PEPSICO_2021_10K p.63].  \n2. The table notes that the amounts are presented **in millions** of dollars.  \n\n**Conversion to billions**\n\n\\[\n4{,}625\\ \\text{million dollars} \\times \\frac{1\\ \\text{billion}}{1{,}000\\ \\text{million}} = 4.625\\ \\text{billion dollars}\n\\]\n\n**Result**\n\nThe FY\u202f2021 capital expenditure (capital spending) for PepsiCo is **approximately\u202f$4.6\u202fbillion** (specifically $4.625\u202fbillion).",
+      "citations": [
+        {
+          "doc_id": "PEPSICO_2021_10K",
+          "page": 63
+        }
+      ],
+      "retrieved": [
+        {
+          "doc_id": "PEPSICO_2021_10K",
+          "page": 52
+        },
+        {
+          "doc_id": "PEPSICO_2021_10K",
+          "page": 63
+        },
+        {
+          "doc_id": "PEPSICO_2021_10K",
+          "page": 52
+        },
+        {
+          "doc_id": "PEPSICO_2021_10K",
+          "page": 54
+        },
+        {
+          "doc_id": "PEPSICO_2021_10K",
+          "page": 64
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 304.1455999482423,
+        "rerank": 0.0,
+        "llm": 4258.674200042151,
+        "total": 4563.24330001371
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.5,
+      "correct": true,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "financebench_id_05915",
+      "question": "What is the FY2018 fixed asset turnover ratio for CVS Health? Fixed asset turnover ratio is defined as: FY2018 revenue / (average PP&E between FY2017 and FY2018). Round your answer to two decimal places. Calculate what was asked by utilizing the line items clearly shown in the P&L statement and the balance sheet.",
+      "gold_answer": "17.98",
+      "doc_id": "CVSHEALTH_2018_10K",
+      "gold_pages": [
+        302,
+        304
+      ],
+      "answer": "**Step\u202f1 \u2013 FY\u202f2018 revenue**  \nTotal revenues for 2018 are $194,579\u202fmillion\u3010CVSHEALTH_2018_10K p.302\u3011.\n\n**Step\u202f2 \u2013 Property, plant & equipment (PP&E) balances**  \n- FY\u202f2018 PP&E (net) = $11,349\u202fmillion\u3010CVSHEALTH_2018_10K p.304\u3011  \n- FY\u202f2017 PP&E (net) = $10,292\u202fmillion\u3010CVSHEALTH_2018_10K p.304\u3011\n\n**Step\u202f3 \u2013 Average PP&E (FY\u202f2017\u2011FY\u202f2018)**  \n\n\\[\n\\text{Average PP\\&E}= \\frac{11,349 + 10,292}{2}\n= \\frac{21,641}{2}\n= 10,820.5\\ \\text{million}\n\\]\n\n**Step\u202f4 \u2013 Fixed\u2011asset turnover ratio**  \n\n\\[\n\\text{Turnover}= \\frac{\\text{FY\u202f2018 revenue}}{\\text{Average PP\\&E}}\n= \\frac{194,579}{10,820.5}\n\\approx 17.99\n\\]\n\nRounded to two decimal places:\n\n\\[\n\\boxed{18.00}\n\\]",
+      "citations": [],
+      "retrieved": [
+        {
+          "doc_id": "CVSHEALTH_2018_10K",
+          "page": 328
+        },
+        {
+          "doc_id": "CVSHEALTH_2018_10K",
+          "page": 145
+        },
+        {
+          "doc_id": "CVSHEALTH_2018_10K",
+          "page": 304
+        },
+        {
+          "doc_id": "CVSHEALTH_2018_10K",
+          "page": 306
+        },
+        {
+          "doc_id": "CVSHEALTH_2018_10K",
+          "page": 302
+        }
+      ],
+      "latency_ms": {
+        "retrieve": 395.00860002590343,
+        "rerank": 0.0,
+        "llm": 2329.008899978362,
+        "total": 2724.6295000077225
+      },
+      "generation_source": "groq",
+      "recall": 1.0,
+      "mrr": 0.3333333333333333,
+      "correct": false,
+      "faithfulness": 1.0
+    }
+  ]
+}

@@ -148,7 +148,7 @@ Order per request: disk cache -> a key under budget (Groq) -> on 429/5xx/timeout
 
 ## Known limitations (for the README)
 
-- Small subset (~10 companies); dev n=29, so one question is 0.034 of any metric and results do not generalize to all filings. The BM25 weight was tuned on dev; the test split (Task 11) has not been run.
+- Small subset (~10 companies); dev n=29, so one question is 0.034 of any metric and results do not generalize to all filings. The BM25 weight was tuned on dev; the test split was run once (Task 11) and every metric was lower than dev (accuracy 0.414 vs 0.586).
 - LLM-as-judge is not human evaluation; the answerer and both judges are the same model.
 - Multi-page questions (ratios needing two statements) fail when only one page is retrieved, and page-level recall@5 hides it.
 - Scanned or image-only pages are skipped (no OCR).
