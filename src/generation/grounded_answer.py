@@ -57,12 +57,16 @@ def generate(q: str, hits: list[Hit], llm, system: str = SYSTEM_GROUNDED) -> Que
     raw = llm.complete(build_grounded_prompt(q, hits), system=system)
     elapsed_ms = (time.perf_counter() - start) * 1000
     contexts = [h.chunk.text for h in hits]
+    sources = [Citation(doc_id=h.chunk.doc_id, page=h.chunk.page) for h in hits]
     if _is_idk(raw):
-        return QueryResult(answer=IDK, citations=[], contexts=contexts, latency_ms={"llm": elapsed_ms})
+        return QueryResult(
+            answer=IDK, citations=[], contexts=contexts, sources=sources, latency_ms={"llm": elapsed_ms}
+        )
     answer = raw.strip()
     return QueryResult(
         answer=answer,
         citations=parse_citations(answer, hits),
         contexts=contexts,
+        sources=sources,
         latency_ms={"llm": elapsed_ms},
     )

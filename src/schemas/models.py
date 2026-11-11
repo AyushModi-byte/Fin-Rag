@@ -50,4 +50,5 @@ class QueryResult(BaseModel):
     answer: str
     citations: list[Citation]
     contexts: list[str]
+    sources: list[Citation] = []  # doc and page of each context passage, same order as `contexts`
     latency_ms: dict[str, float]

@@ -766,3 +766,26 @@ def test_per_day_429_on_every_key_ends_in_a_clean_budget_stop_without_retry_loop
     with pytest.raises(BudgetNearlyExhausted):
         groq_client(gcfg, tm, t).complete("q")
     assert len(t.calls) == 3 and tm.sleeps == []  # one try per key, no backoff waits
+
+
+# ---- sources: the document and page of every context passage (for the evidence panel) ----
+
+
+def test_sources_are_aligned_one_to_one_with_contexts():
+    hits = [make_hit(page=60, text="a"), make_hit(doc_id="ADOBE_2022_10K", page=40, text="b")]
+    result = generate("q", hits, FakeLLM("Answer [3M_2018_10K p.60]."))
+    assert result.contexts == ["a", "b"]
+    assert [(s.doc_id, s.page) for s in result.sources] == [("3M_2018_10K", 60), ("ADOBE_2022_10K", 40)]
+
+
+def test_sources_are_kept_when_the_answer_is_i_dont_know():
+    result = generate("q", [make_hit(page=60)], FakeLLM("I don't know"))
+    assert result.citations == [] and [(s.doc_id, s.page) for s in result.sources] == [("3M_2018_10K", 60)]
+
+
+def test_sources_empty_without_context_and_default_for_old_cached_results():
+    assert generate("q", [], FakeLLM("x")).sources == []
+    from src.schemas.models import QueryResult
+
+    old = {"answer": "A", "citations": [], "contexts": ["c"], "latency_ms": {}}  # cached before `sources` existed
+    assert QueryResult.model_validate(old).sources == []

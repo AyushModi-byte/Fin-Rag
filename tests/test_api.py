@@ -364,3 +364,10 @@ def test_trace_lines_are_not_duplicated_when_both_log_setups_share_one_file(tmp_
             h.flush()
     lines = [x for x in log.read_text(encoding="utf-8").splitlines() if x.strip()]
     assert len(lines) == 1 and json.loads(lines[0])["stage"] == "retrieve"
+
+
+def test_query_response_lists_the_source_page_of_each_context(tmp_path):
+    cfg = cfg_for(tmp_path)
+    pipe, _, _ = make_pipeline(cfg, hits=[make_hit("h0", page=7), make_hit("h1", page=9)])
+    body = TestClient(create_app(pipeline=pipe, cfg=cfg)).post("/query", json={"question": "3M FY2018 capex?"}).json()
+    assert [s["page"] for s in body["sources"]] == [7, 9] and len(body["sources"]) == len(body["contexts"])
