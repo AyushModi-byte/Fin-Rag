@@ -91,7 +91,7 @@ question -> security/acl + redact -> cache/semantic_cache (hit? return)
 - Router: company and fiscal-year metadata filter. Two-digit years ("FY22") are read; when several years are named the latest wins (the latest 10-K carries the prior-year comparatives).
 - Fusion: weighted RRF, `score = sum(weight / (rrf_k + rank))`, dense 1.0 and BM25 0.25. With mxbai-large the dense ranking is stronger, and down-weighting BM25 improved every metric.
 - Tiny chunks (under 15 regex tokens) are dropped from both lists before fusion.
-- Generation: top_n = 5 chunks, prompt `grounded_v1`, `[doc_id p.N]` citations or exactly `I don't know`.
+- Generation: top_n = 8 chunks (was 5 until experiment 16; dev accuracy 0.586 -> 0.690), prompt `grounded_v1`, `[doc_id p.N]` citations or exactly `I don't know`.
 
 ## config.yaml (final values; every setting lives in config.yaml, no magic numbers)
 
@@ -102,7 +102,7 @@ lexical: {stopwords: en, tokenizer: v2, stem: true}
 embeddings: {model: mixedbread-ai/mxbai-embed-large-v1, batch_size: 1, sort_by_length: true, threads: null, query_prefix: "", doc_prefix: ""}
 chunking: {child_tokens: 300, overlap_tokens: 40, max_embed_tokens: 480, min_tokens: 15, max_header_rows: 3, max_heading_chars: 80, context_prefix: true}
 retrieval: {top_k: 20, rrf_k: 60, dense_weight: 1.0, bm25_weight: 0.25, use_router_filter: true, min_chunk_tokens: 15}
-rerank: {enabled: false, model: Xenova/ms-marco-MiniLM-L-6-v2, top_n: 5}   # top_n is also the context size given to the LLM
+rerank: {enabled: false, model: Xenova/ms-marco-MiniLM-L-6-v2, top_n: 8}   # top_n is also the context size given to the LLM
 generation: {expand_tables: false, max_context_tokens: 4000, prompt_version: grounded_v1}
 llm:
   primary: {provider: groq, model: openai/gpt-oss-120b, rpm: 25, daily_budget: 1000, daily_token_budget: 200000, api_key_envs: [GROQ_API_KEY_1, GROQ_API_KEY_2, GROQ_API_KEY_3]}
@@ -154,4 +154,4 @@ Order per request: disk cache -> a key under budget (Groq) -> on 429/5xx/timeout
 - Multi-page questions (ratios needing two statements) fail when only one page is retrieved, and page-level recall@5 hides it.
 - Scanned or image-only pages are skipped (no OCR).
 - Groq free tier: 200,000 tokens/day per account (now counted by `LLMClient`); a full dev eval with every answer regenerated is a large share of it.
-- Untested ideas: statement-type boost, ratio-term expansion, multi-page diversification of the context, sentence-aware windowing, top_n 8 (run invalid, see experiment 16).
+- Untested ideas: statement-type boost, ratio-term expansion, multi-page diversification of the context, sentence-aware windowing.

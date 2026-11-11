@@ -9,7 +9,7 @@ def test_load_config_has_required_keys():
     cfg = load_config()
     assert cfg.embeddings.model
     assert cfg.retrieval.top_k == 20
-    assert cfg.rerank.top_n == 5
+    assert cfg.rerank.top_n == 8  # experiment 16: dev accuracy 0.586 -> 0.690 with 8 chunks in the prompt
     assert cfg.index.version
 
 

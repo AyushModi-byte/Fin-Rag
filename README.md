@@ -36,7 +36,7 @@ pipeline (0.2 s end to end through HTTP). Test run: `data/eval/runs/20261111T081
 | 13 | Parent expansion (whole table for generation) | 0.586 | 0.452 | 0.586 | 0.930 | not adopted (no change) |
 | 14 | Numeric-reasoning prompt `grounded_v2` | 0.586 | 0.452 | 0.552 | 0.846 | revert |
 | 15 | 4 cross-encoder rerankers, offline | best 0.621 | all < 0.452 | n/a | n/a | not adopted |
-| 16 | `top_n` 5 -> 8 | n/a | n/a | n/a | n/a | not completed (Groq daily token limit; invalid run) |
+| 16 | `top_n` 5 -> 8 (chunks given to the LLM) | 0.586 | 0.452 | **0.690** | **0.940 (n=25)** | **keep (shipped)**; dev only, test was run with 5 |
 
 Experiments 3 to 7 are pilots or duplicates of the rows above; the full log, with run files and notes, is in
 `docs/experiments.md`. The BM25 weight (row 12) was chosen on dev from three values, so the dev numbers are slightly optimistic.
@@ -53,7 +53,7 @@ data/raw/*.pdf -> ingestion (PyMuPDF, tables kept) -> chunking v2 (page parents,
 ONLINE   (src/pipelines/query_pipeline.py, served by src/api/routes.py)
 question -> redact PII -> ACL -> semantic cache (hit? return)
    -> router (company + fiscal year filter, in scope?)
-   -> dense top 20 + BM25 top 20 -> weighted RRF (1.0 : 0.25) -> top 5 chunks      [cross-encoder rerank: built, OFF]
+   -> dense top 20 + BM25 top 20 -> weighted RRF (1.0 : 0.25) -> top 8 chunks      [cross-encoder rerank: built, OFF]
    -> grounded answer via LLMClient (disk cache, key rotation, retries, per-key request and token budgets)
    -> QueryResult(answer, citations, contexts, latency_ms)
 ```
@@ -132,7 +132,7 @@ The test split needs `--final` and was run once. Do not use it for tuning.
   uncached eval of 29 questions used about 104,000 tokens over the three keys.
 - **No reranker.** It lowered MRR on every candidate tried (a rerank that helped took ~12 s per question on CPU).
 - **Not deployed.** The Hugging Face Spaces deploy from the original plan was not done.
-- Untested ideas: statement-type boost, ratio-term expansion, multi-page diversification of the context, `top_n` 8 (offline dev recall@8 is 0.759 vs 0.586 at 5, but the answer-level effect was never measured).
+- Untested ideas: statement-type boost, ratio-term expansion, multi-page diversification of the context.
 
 ## Layout
 
