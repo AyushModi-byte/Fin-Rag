@@ -4,8 +4,10 @@ Retrieval-augmented question answering over SEC 10-K filings. Ask a question abo
 an answer that cites the page it came from, or "I don't know" when the filing does not say.
 
 <p align="center">
-  <img src="docs/images/answer.png" alt="FinRag web UI showing a cited answer, timing and the retrieved passages" width="820">
+  <img src="docs/images/demo.gif" alt="Screen recording: a question is typed, FinRag answers with a table and citation chips, and clicking a citation opens the retrieved passage it came from" width="820">
 </p>
+
+<p align="center"><sub>A real session against the local app: ask, get a cited answer, click a citation to read the passage behind it.</sub></p>
 
 FinRag runs on free tiers only: local CPU embeddings, an embedded vector store, and a free Groq key for the language
 model. It covers a fixed subset of 22 annual reports from 10 companies (a slice of the
@@ -20,7 +22,7 @@ and what hosting it would take are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 
 [Results](#results) · [Architecture](#architecture) · [Quick start](#quick-start) · [API](#api) ·
 [Configuration](#configuration) · [Security and abuse protection](#security-and-abuse-protection) ·
-[Evaluation](#evaluation) · [Limitations](#limitations) · [Repository layout](#repository-layout)
+[Evaluation](#evaluation) · [Limitations](#limitations) · [Repository layout](#repository-layout) · [Screenshots](#screenshots)
 
 ## Results
 
@@ -263,7 +265,15 @@ docs/                  ARCHITECTURE.md, DEPLOYMENT.md, experiments.md, plan and 
 Dockerfile, docker-compose.yaml, .env.example
 ```
 
-<p align="center"><img src="docs/images/mobile.png" alt="FinRag on a phone" width="280"></p>
+## Screenshots
+
+<p align="center">
+  <img src="docs/images/answer.png" alt="FinRag web UI showing a cited answer, timing and the retrieved passages" width="820">
+</p>
+
+<p align="center">
+  <img src="docs/images/mobile.png" alt="FinRag on a phone" width="280">
+</p>
 
 ## Acknowledgements and licence
 
