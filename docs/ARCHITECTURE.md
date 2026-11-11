@@ -42,7 +42,7 @@ question -> security/acl + redact -> cache/semantic_cache (hit? return)
 | cache | semantic_cache.py | Exact then similarity cache (`cache.threshold` 0.95); similarity hits need the same company/year scope; JSON file `cache.path`, dropped when index version, prompt version or LLM model changes. Used by the API only, never by the eval |
 | prompts | prompt_templates.py | Versioned prompts (`grounded_v1` active, `grounded_v2` tested and rejected) |
 | llm | llm_client.py | Groq client: key rotation, retries, backoff with provider hints, disk cache, throttle, per-key daily request and token budgets |
-| generation | grounded_answer.py | Answer with `[doc_id p.N]` citations or `I don't know` |
+| generation | grounded_answer.py | Answer with `[doc_id p.N]` citations or `I don't know`; `parse_citations` also reads 【…】 / ［…］ / (…) brackets, stray spaces, page lists and ranges, several docs per bracket, and keeps only retrieved pages (answer text is never rewritten) |
 | generation | context_expansion.py | Replace a retrieved table row group with its full table (flag `generation.expand_tables`, off) |
 | eval | rag_metrics.py | recall@k, MRR, LLM-judge accuracy, faithfulness |
 | observability | tracing.py | `trace(stage, timings)` records per-stage ms into `latency_ms` and writes one bare JSON line per stage to `logs/app.log` |

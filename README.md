@@ -126,14 +126,13 @@ The test split needs `--final` and was run once. Do not use it for tuning.
   1 to 2 questions is noise, and part of the gap can come from choosing the BM25 weight on dev.
 - **LLM-as-judge.** Accuracy and faithfulness are judged by the same model that answers (`gpt-oss-120b`), not by humans.
 - **Multi-page questions.** Ratios that need two statements fail when only one page is retrieved, and page-level recall@5 hides it.
-- **Citations.** The model sometimes writes `【doc p.N】` with full-width brackets; the citation parser does not match
-  these, so `citations` can be empty even though the answer text cites a page. Accuracy and faithfulness are not affected.
+- **Citations.** The model does not always use the requested `[doc_id p.N]` form (about 40% of its citations used full-width `【…】` brackets). The parser now accepts those, other bracket and space variants, page ranges and several documents in one bracket, and keeps only pages that were retrieved; the old parser missed about half of the cited answers. The run file of the test split was made with the old parser, so its `citations` are incomplete (metrics are not affected).
 - **No OCR.** Scanned or image-only pages are skipped.
 - **Free tier limits.** Groq allows 200,000 tokens/day per account; `LLMClient` counts them and stops at 80%. One full
   uncached eval of 29 questions used about 104,000 tokens over the three keys.
 - **No reranker.** It lowered MRR on every candidate tried (a rerank that helped took ~12 s per question on CPU).
 - **Not deployed.** The Hugging Face Spaces deploy from the original plan was not done.
-- Untested ideas: statement-type boost, ratio-term expansion, multi-page diversification of the context, `top_n` 8.
+- Untested ideas: statement-type boost, ratio-term expansion, multi-page diversification of the context, `top_n` 8 (offline dev recall@8 is 0.759 vs 0.586 at 5, but the answer-level effect was never measured).
 
 ## Layout
 

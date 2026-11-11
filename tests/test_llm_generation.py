@@ -337,6 +337,78 @@ def test_duplicate_citations_are_collapsed():
     assert len(result.citations) == 1
 
 
+# ---- citation formats the model really produces (measured on the saved eval answers) ----
+
+from src.generation.grounded_answer import parse_citations  # noqa: E402
+
+D = "3M_2018_10K"
+
+
+def cites(answer, pages=(60, 61, 62), doc=D):
+    return [(c.doc_id, c.page) for c in parse_citations(answer, [make_hit(doc_id=doc, page=p) for p in pages])]
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        "Capex was 5 【" + D + " p.60】.",               # full-width corner brackets (177 of ~410 in saved runs)
+        "Capex was 5 ［" + D + " p.60］.",               # full-width square brackets
+        "Capex was 5 [" + D + " p.60].",                    # narrow no-break space before the bracket
+        "Capex was 5 [" + D + " p.60 ].",                          # space before the closing bracket
+        "Capex was 5 [ " + D + " p.60].",                          # space after the opening bracket
+        "Capex was 5 (" + D + " p.60).",                    # parentheses
+        "Capex was 5 [" + D + " p. 60].",                          # space after "p."
+        "Capex was 5 [" + D + " p60].",                            # no dot
+        "| Capex | 5 | [" + D + " p.60] |",                       # inside a markdown table cell
+        "**Capex 5** 【" + D + " p.60】",               # inside bold text
+    ],
+)
+def test_citation_bracket_variants_are_parsed(answer):
+    assert cites(answer) == [(D, 60)]
+
+
+def test_page_list_in_one_bracket_with_fullwidth_brackets():
+    assert cites("x 【" + D + " p.60, p.61】") == [(D, 60), (D, 61)]
+    assert cites("x [" + D + " p.60; p.62]") == [(D, 60), (D, 62)]
+    assert cites("x [" + D + " pp. 60, 61]") == [(D, 60), (D, 61)]
+
+
+def test_page_range_expands_to_the_pages_that_were_in_context():
+    # non-breaking hyphen (U+2011), en dash and a plain hyphen all appear in real answers
+    for dash in ("‑", "–", "-"):
+        assert cites("x [" + D + " p.60" + dash + "62]") == [(D, 60), (D, 61), (D, 62)]
+    assert cites("x [" + D + " p.60-62]", pages=(60, 62)) == [(D, 60), (D, 62)]  # 61 was not retrieved
+
+
+def test_huge_page_range_does_not_loop_or_invent_pages():
+    assert cites("x [" + D + " p.1-99999999999]", pages=(60,)) == [(D, 60)]
+
+
+def test_two_documents_in_one_bracket():
+    a, b = "AMERICANEXPRESS_2022_10K", D
+    hits = [make_hit(doc_id=b, page=60), make_hit(doc_id=a, page=96)]
+    got = [(c.doc_id, c.page) for c in parse_citations(f"x [{b} p.60; {a} p.96]", hits)]
+    assert got == [(b, 60), (a, 96)]
+
+
+def test_mixed_formats_keep_order_and_collapse_duplicates():
+    ans = "A 【" + D + " p.61】 B [" + D + " p.60] C 【" + D + " p.61】"
+    assert cites(ans) == [(D, 61), (D, 60)]
+
+
+def test_text_that_only_looks_like_a_citation_is_ignored():
+    assert cites("See page p.60 of the filing, or [note p.60], or (p.61).") == []
+    assert cites("Revenue was [" + D + "] in total, p.60") == []  # doc id without a page
+    assert cites("x [OTHER_2018_10K p.60]") == []                  # doc not in context
+
+
+def test_answer_text_is_not_rewritten_by_citation_parsing():
+    raw = "Capex was 5 【" + D + " p.60】."
+    result = generate("q", [make_hit(page=60)], FakeLLM(raw))
+    assert result.answer == raw  # eval judges the text as produced; only `citations` changes
+    assert [(c.doc_id, c.page) for c in result.citations] == [(D, 60)]
+
+
 @pytest.mark.parametrize("raw", ["I don't know", "I don't know.", "  I don't know \n"])
 def test_i_dont_know_answer_is_exact_with_no_citations(raw):
     result = generate("q", [make_hit()], FakeLLM(raw))

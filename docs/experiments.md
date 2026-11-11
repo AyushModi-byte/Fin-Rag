@@ -22,6 +22,8 @@ Rule: one change per row. Metrics are on the **dev** split. Keep only if it impr
 | 15 | 2026-11-10 | 5b: cross-encoder rerank on top of exp 12 (offline, all 29 dev questions: MiniLM-L12, jina-turbo, bge-reranker-base, bge-reranker-v2-m3-int8; pool top_k 20 and 30) | best 0.621 (jina-turbo, k20) vs 0.586 | all lower than 0.452 (best 0.387) | n/a | n/a | 1.3 to 11.9 s per question | not adopted (no eval spent) |
 | 16 | 2026-11-10 | 5d: `rerank.top_n` 5 -> 8 (chunks given to the LLM; on top of exp 12) | n/a | n/a | n/a (invalid run: 11/29 errors) | n/a | n/a | **not completed** (Groq tokens-per-day limit); rerun when the quota frees |
 | 17 | 2026-11-11 | Task 10 check (no tuning): cache, tracing, ACL, PII redaction, API added around the unchanged pipeline; eval builds the pipeline without the cache | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | n/a (all 29 answers and 73 judge calls served from the LLM disk cache, 0 API calls) | no regression; run `20261110T204907_dev.json` |
+| 18 | 2026-11-11 | 5d follow-up: offline recall at `top_n` 8 vs 5 on dev (production top-20 list sliced; no LLM, no eval spent) | recall@8 0.759 (22/29) vs recall@5 0.586 (17/29) | n/a | n/a | n/a | n/a | measured only; LLM run for accuracy not done (see notes) |
+| 19 | 2026-11-11 | Citation parser fix (full-width brackets, spaces, ranges, several docs per bracket); not a tuning change, answers untouched | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | n/a (all cached) | keep; run `20261111T090503_dev.json`, 0 API calls |
 
 ### Baseline notes (row 0)
 
@@ -135,6 +137,19 @@ Candidates are the current hybrid results (mxbai-large, BM25 weight 0.25, router
 - PII redaction runs on the question inside the pipeline. Checked beforehand: none of the 150 FinanceBench questions matches the e-mail or phone patterns, so eval prompts are unchanged.
 - Live check (`python main.py`, `curl`): `/health` ok, empty question 422, a Verizon dev question answered in 11.9 s the first time (includes loading the embedding model; the answer came from the LLM disk cache), then 0.2 s end to end from the semantic cache (1.5 ms inside the pipeline). A question containing an e-mail address reached the log redacted (0 occurrences of the address in `logs/app.log`).
 - **Found, not fixed (out of Task 10 scope, would change eval inputs):** the model sometimes writes citations in full-width brackets, `【VERIZON_2022_10K p.23】`, which `parse_citations` does not match, so `citations` comes back empty although the answer cites a page. Accuracy and faithfulness do not use `citations`; recall/MRR use the retrieved list. Needs a decision before Task 11 reports citations.
+
+### Experiment 18 notes (recall at top_n 8, offline, dev only)
+
+- Production retrieval (router, top_k 20, weighted RRF), cut at k, 29 dev questions, numbers as measured: recall@3 14/29 (0.483), **@5 17/29 (0.586)**, @6 19/29 (0.655), **@8 22/29 (0.759)**, @10 25/29 (0.862), @20 25/29 (0.862). recall@5 reproduces the kept 0.586, so the method matches the eval.
+- `top_n` 8 would put the gold page in the LLM context for 5 more questions (00438, 00585, 00790, 01279, 04672). Whether the LLM then answers them correctly, and what 3 more chunks do to faithfulness and tokens, is NOT measured: that needs a dev eval with every answer regenerated (about 100,000 tokens over the three keys, as the test run did) and has not been run. Experiment 16 therefore stays "not completed" for accuracy.
+- Caveat for reading `compare_indexes` output: its `gold_rank` comes from a top-100 retrieval, whose fusion order can differ from the top-20 list the pipeline uses (question 01009 ranks 2 there but is a miss at 5 in production), so recall computed from `gold_rank` (18/29 at 5) is not the pipeline's recall (17/29). Use the production list, as above.
+- The test split was not touched.
+
+### Experiment 19 notes (citation parser)
+
+- On the 153 distinct saved answers that name a document id, the old parser found a citation in 72. Formats seen in the data: `[DOC p.N]` (228), U+3010/3011 corner brackets `【DOC p.N】` (177), a trailing space inside the bracket (4), a page range with a non-breaking hyphen (3), parentheses (1), two documents in one bracket (1). The new parser (`src/generation/grounded_answer.py`) handles these and finds one in 151; the other 2 cite pages that were not in the retrieved context, which are dropped on purpose.
+- Re-running the dev eval gave the same four metrics (accuracy and faithfulness judge the answer text, which is never rewritten; a test pins this), and all 22 answered dev questions now carry citations.
+- The test-split result (experiment "Final") was produced with the old parser: its answers' text and metrics are unaffected, but `citations` in that run file under-report.
 
 ## Final (test split, run once)
 
