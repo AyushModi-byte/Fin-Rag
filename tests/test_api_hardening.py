@@ -345,3 +345,21 @@ def test_health_requests_are_not_logged_as_client_requests(tmp_path, caplog):
     with caplog.at_level(logging.INFO, logger="finrag"):
         client.get("/health")
     assert request_lines(caplog) == []
+
+
+# ---------- logs reach stdout/stderr (a container host only shows those) ----------
+
+
+def test_trace_lines_are_also_written_to_the_console_once(tmp_path, monkeypatch, capsys):
+    from src.observability.tracing import log_event, setup_trace_logging
+
+    monkeypatch.setattr(logging.getLogger("finrag.trace"), "handlers", [])
+    log = tmp_path / "app.log"
+    setup_trace_logging(str(log))
+    setup_trace_logging(str(log))  # idempotent: no second console handler
+    log_event("request", client="abc", status=200)
+    for h in logging.getLogger("finrag.trace").handlers:
+        h.flush()
+    err = capsys.readouterr().err
+    lines = [x for x in err.splitlines() if x.strip()]
+    assert len(lines) == 1 and json.loads(lines[0])["client"] == "abc"

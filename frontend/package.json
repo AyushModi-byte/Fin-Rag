@@ -5,6 +5,6 @@
   "description": "Static frontend for the FinRag API. No build step, no runtime dependencies.",
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "serve": "node scripts/serve.mjs"
+    "serve": "python -m http.server 5173"
   }
 }

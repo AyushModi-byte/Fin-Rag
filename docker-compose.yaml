@@ -6,6 +6,9 @@ services:
     ports:
       - "8000:8000"
     env_file: .env          # GROQ_API_KEY_1..3 (never baked into the image)
+    environment:
+      # origins allowed to call the API from a browser, comma separated (set in .env or the shell)
+      FINRAG_CORS_ORIGINS: ${FINRAG_CORS_ORIGINS:-}
     volumes:
       # LLM disk cache and per-key daily budget counters, shared with the host so the same keys are
       # counted once and cached answers are reused

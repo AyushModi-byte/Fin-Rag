@@ -23,5 +23,6 @@ RUN mkdir -p logs .cache/llm && chown -R finrag:finrag /app
 
 USER finrag
 EXPOSE 8000
-# 0.0.0.0 here, not in config.yaml (api.host stays 127.0.0.1 for local runs)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 0.0.0.0 here, not in config.yaml (api.host stays 127.0.0.1 for local runs). --no-access-log: uvicorn would print
+# every client address; the app logs a hashed client label instead.
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]

@@ -17,6 +17,13 @@ log = logging.getLogger("finrag.trace")
 def setup_trace_logging(log_file: str) -> None:
     """Append trace lines (bare JSON, one per line) to `log_file`; idempotent per file."""
     path = str(Path(log_file).resolve())
+    if not any(getattr(h, "_finrag_trace_console", False) for h in log.handlers):
+        # container hosts only show stdout/stderr, so the same JSON lines go to the console too
+        console = logging.StreamHandler()
+        console._finrag_trace_console = True
+        console.setFormatter(logging.Formatter("%(message)s"))
+        log.addHandler(console)
+        log.setLevel(logging.INFO)
     if any(getattr(h, "_finrag_trace_file", None) == path for h in log.handlers):
         return
     Path(log_file).parent.mkdir(parents=True, exist_ok=True)
