@@ -116,9 +116,9 @@ llm:
   max_retries: 2
   cache_dir: .cache/llm
   budget_warn_ratio: 0.8
-cache: {enabled: true, threshold: 0.95, path: .cache/semantic_cache.json}
+cache: {enabled: true, threshold: 0.95, path: .cache/state/semantic_cache.json}
 acl: {default: "*", users: {}}
-api: {host: 127.0.0.1, port: 8000, max_question_chars: 2000, cors_origins: [], require_api_key: false, trusted_proxy_hops: 1, rate_limit: {per_minute: 5, per_day: 40, max_clients: 10000}, daily_global_cap: 180, usage_file: .cache/api_usage.json}   # + env names for key, CORS and log salt, see config.yaml
+api: {host: 127.0.0.1, port: 8000, max_question_chars: 2000, cors_origins: [], require_api_key: false, trusted_proxy_hops: 1, rate_limit: {per_minute: 5, per_day: 40, max_clients: 10000}, daily_global_cap: 180, usage_file: .cache/state/api_usage.json}   # + env names for key, CORS and log salt, see config.yaml
 eval: {dev_ratio: 0.5, seed: 42, n_companies: 10, min_questions: 50, recall_k: 5, runs_dir: data/eval/runs, judge_max_output_tokens: 4096}
 ```
 

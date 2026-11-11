@@ -25,7 +25,7 @@ llm:
   cache_dir: .cache/llm
   budget_warn_ratio: 0.8  # stop and tell the user at 80% of a daily budget
 generation: {expand_tables: false, max_context_tokens: 4000, prompt_version: grounded_v1}
-cache: {enabled: true, threshold: 0.95, path: .cache/semantic_cache.json, version: 2}   # bump version when the result format or citation parser changes
+cache: {enabled: true, threshold: 0.95, path: .cache/state/semantic_cache.json, version: 2}   # bump version when the result format or citation parser changes
 acl: {default: "*", users: {}}   # users: {alice: [Adobe, 3M]}; "*" = every company
 api:
   host: 127.0.0.1
@@ -39,7 +39,7 @@ api:
   log_salt_env: FINRAG_LOG_SALT       # salt for the hashed client label in logs; random per process if unset
   rate_limit: {per_minute: 5, per_day: 40, max_clients: 10000}   # per client IP; max_clients bounds memory
   daily_global_cap: 180               # accepted /query calls per UTC day, all clients; 180 x ~2.5k tokens (8-passage prompt; measured 1.3k-2.4k) = ~450k of the 3 x 160k usable Groq tokens
-  usage_file: .cache/api_usage.json
+  usage_file: .cache/state/api_usage.json
 eval: {dev_ratio: 0.5, seed: 42, n_companies: 10, min_questions: 50, recall_k: 5, runs_dir: data/eval/runs, judge_max_output_tokens: 4096}
 data:
   questions_url: https://raw.githubusercontent.com/patronus-ai/financebench/main/data/financebench_open_source.jsonl

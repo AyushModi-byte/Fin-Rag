@@ -12,8 +12,10 @@ model. It covers a fixed subset of 22 annual reports from 10 companies (a slice 
 [FinanceBench](https://github.com/patronus-ai/financebench) benchmark), and every design decision, including the ones
 that did not work, is logged with its measurements in [`docs/experiments.md`](docs/experiments.md).
 
-**Status.** The system, API hardening, web UI and Docker image are built and tested locally. It is **not deployed yet**;
-[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) has the deployment plan. The UI deploys free on Vercel; the API needs a host with about 2 GB of RAM, and Hugging Face Docker Spaces turned out to require a paid plan, so the free backend host is still to be decided.
+**Status.** The system, API hardening, web UI and Docker image are built and tested locally. The deployment path that costs
+nothing and needs no card is: UI on Vercel (free), API in Docker on your own machine exposed through a free Cloudflare
+quick tunnel (`python -m src.jobs.go_live`), so it is live only while you run it. Details, trade-offs and why Hugging Face
+Spaces and Render were ruled out: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Contents
 
@@ -128,6 +130,7 @@ python -m http.server 5173 --directory frontend  # UI on http://localhost:5173 (
 
 ```bash
 docker compose up --build        # http://localhost:8000; needs .env and .cache/index/v2 at build time
+python -m src.jobs.go_live --origin https://<your-ui>.vercel.app --push   # same, plus a public https tunnel (see docs/DEPLOYMENT.md)
 ```
 
 The image (python:3.13-slim, about 3.3 GB) bakes in the v2 index and the embedding model, so it starts offline. Keys come

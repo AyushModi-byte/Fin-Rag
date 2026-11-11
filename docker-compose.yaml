@@ -13,6 +13,8 @@ services:
       # LLM disk cache and per-key daily budget counters, shared with the host so the same keys are
       # counted once and cached answers are reused
       - ./.cache/llm:/app/.cache/llm
+      # semantic cache and the daily-cap counter: a container restart must not hand out a fresh day
+      - ./.cache/state:/app/.cache/state
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/health', timeout=3)"]
       interval: 15s
