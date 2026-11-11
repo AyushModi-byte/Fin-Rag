@@ -1,8 +1,14 @@
 # Deployment guide (free tier only)
 
-Target: the API on a **Hugging Face Space** (Docker, free CPU) and the web UI on **Vercel** (free Hobby plan).
-Nothing here costs money. Nothing in this repository has been deployed yet: the steps below were prepared and the
-image they produce was built and started locally, but the platform steps (accounts, pushing, secrets) are yours to run.
+> **Correction (2026-11-11).** An earlier version of this guide said a Docker Space on Hugging Face's free CPU tier
+> would host the API. That was wrong: Hugging Face's docs now say "Gradio and Docker Spaces run on compute and require a
+> paid plan to create (PRO for personal accounts)"; only **Static** Spaces are free. The backend host for a no-cost
+> deployment is therefore undecided, and the Hugging Face steps below apply only if you take a PRO plan. The Vercel
+> (frontend) part is unaffected. Candidate free hosts and their trade-offs are listed in the README's deployment section.
+
+Original target: the API on a **Hugging Face Space** (Docker) and the web UI on **Vercel** (free Hobby plan).
+Nothing in this repository has been deployed yet: the steps below were prepared and the image they produce was built
+and started locally, but the platform steps (accounts, pushing, secrets) have not been run.
 
 ```
 Browser ──HTTPS──> Vercel (static files: frontend/)
@@ -16,7 +22,7 @@ Browser ──HTTPS──> Vercel (static files: frontend/)
 
 | Platform | Role | Why |
 |---|---|---|
-| Hugging Face Spaces (Docker) | API | The app needs about 2 GB of RAM (embedding model 0.64 GB plus a 230 MB index). The free CPU Space has far more than that. Free instances on most "web service" hosts (for example Render's free tier, about 512 MB) are too small. |
+| Hugging Face Spaces (Docker) | API | **Needs a paid plan (PRO).** Its hardware fits (16 GB RAM, 2 vCPU on CPU Basic), but creating a Docker Space is not free. Free instances on most "web service" hosts (for example Render's free tier, about 512 MB) are too small for the app's roughly 2 GB. |
 | Vercel (static) | UI | The UI is plain files. Vercel's serverless functions cannot hold the model or index, so Vercel is not an option for the API. |
 
 Platform limits change. Before you start, check the current free-tier pages for: Hugging Face Spaces hardware and

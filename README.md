@@ -13,7 +13,7 @@ model. It covers a fixed subset of 22 annual reports from 10 companies (a slice 
 that did not work, is logged with its measurements in [`docs/experiments.md`](docs/experiments.md).
 
 **Status.** The system, API hardening, web UI and Docker image are built and tested locally. It is **not deployed yet**;
-[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) has the free-tier plan (Hugging Face Space for the API, Vercel for the UI).
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) has the deployment plan. The UI deploys free on Vercel; the API needs a host with about 2 GB of RAM, and Hugging Face Docker Spaces turned out to require a paid plan, so the free backend host is still to be decided.
 
 ## Contents
 
