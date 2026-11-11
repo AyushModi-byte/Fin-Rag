@@ -38,7 +38,7 @@ api:
   trusted_proxy_hops: 1               # proxies in front of the app; the client IP is the Nth entry from the right of X-Forwarded-For (0 = ignore the header)
   log_salt_env: FINRAG_LOG_SALT       # salt for the hashed client label in logs; random per process if unset
   rate_limit: {per_minute: 5, per_day: 40, max_clients: 10000}   # per client IP; max_clients bounds memory
-  daily_global_cap: 250               # accepted /query calls per UTC day, all clients; 250 x ~1.4k tokens = ~350k of the 3 x 160k usable Groq tokens
+  daily_global_cap: 180               # accepted /query calls per UTC day, all clients; 180 x ~2.5k tokens (8-passage prompt; measured 1.3k-2.4k) = ~450k of the 3 x 160k usable Groq tokens
   usage_file: .cache/api_usage.json
 eval: {dev_ratio: 0.5, seed: 42, n_companies: 10, min_questions: 50, recall_k: 5, runs_dir: data/eval/runs, judge_max_output_tokens: 4096}
 data:

@@ -1,140 +1,262 @@
 # FinRag
 
-Retrieval-augmented question answering over SEC 10-K filings (a ~10-company subset of
-[FinanceBench](https://github.com/patronus-ai/financebench)). CPU only, free tiers only: local embeddings
-(`mxbai-embed-large-v1`), embedded Qdrant + BM25, and Groq `openai/gpt-oss-120b` for generation and judging.
+Retrieval-augmented question answering over SEC 10-K filings. Ask a question about a company's annual report and get
+an answer that cites the page it came from, or "I don't know" when the filing does not say.
 
-Every answer carries `[doc_id p.N]` citations or exactly `I don't know`. The retrieval, generation and eval
-code is tested (232 tests) and every tuning step is logged in [`docs/experiments.md`](docs/experiments.md).
+<p align="center">
+  <img src="docs/images/answer.png" alt="FinRag web UI showing a cited answer, timing and the retrieved passages" width="820">
+</p>
 
-## Results (numbers exactly as measured; n = 29 questions per split)
+FinRag runs on free tiers only: local CPU embeddings, an embedded vector store, and a free Groq key for the language
+model. It covers a fixed subset of 22 annual reports from 10 companies (a slice of the
+[FinanceBench](https://github.com/patronus-ai/financebench) benchmark), and every design decision, including the ones
+that did not work, is logged with its measurements in [`docs/experiments.md`](docs/experiments.md).
 
-| Split | Recall@5 | MRR | Accuracy | Faithfulness | "I don't know" | p50 | p95 |
+**Status.** The system, API hardening, web UI and Docker image are built and tested locally. It is **not deployed yet**;
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) has the free-tier plan (Hugging Face Space for the API, Vercel for the UI).
+
+## Contents
+
+[Results](#results) · [Architecture](#architecture) · [Quick start](#quick-start) · [API](#api) ·
+[Configuration](#configuration) · [Security and abuse protection](#security-and-abuse-protection) ·
+[Evaluation](#evaluation) · [Limitations](#limitations) · [Repository layout](#repository-layout)
+
+## Results
+
+Numbers exactly as measured on 29 questions per split. One question moves a score by 0.034.
+
+| Split | Passages to the LLM | Recall@5 | MRR | Accuracy | Faithfulness | "I don't know" | p50 / p95 latency |
 |---|---|---|---|---|---|---|---|
-| dev (tuned on) | 0.586 (17/29) | 0.452 | 0.586 (17/29) | 0.930 (n=22) | 7 | 2344 ms | n/a |
-| **test (run once, not tuned on)** | **0.552 (16/29)** | **0.324** | **0.414 (12/29)** | **0.842 (n=19)** | 10 | 2620 ms | 10081 ms |
+| **Test** (held out, run once) | 5 | 0.552 (16/29) | 0.324 | 0.414 (12/29) | 0.842 (n=19) | 10 | 2.6 s / 10.1 s |
+| Dev (used for tuning) | 8 (the shipped setting) | 0.586 (17/29) | 0.452 | 0.690 (20/29) | 0.940 (n=25) | 4 | 2.1 s* |
 
-The test row is the honest estimate. Every metric is lower than on dev, and **the plan's targets were missed**
-(recall@5 >= 0.80, accuracy 60-75%, faithfulness >= 0.90); only p50 < 4 s was met. Cache hits take about 1.5 ms inside the
-pipeline (0.2 s end to end through HTTP). Test run: `data/eval/runs/20261111T081204_test.json`, 65 Groq calls, no errors.
+\* over the 10 questions that were not already cached.
 
-- Recall@5 is page-level (any gold page in the top 5 counts), MRR is the rank of the first gold page.
-- Accuracy and faithfulness are LLM-judged (see Limitations). Faithfulness is scored over answered questions only.
+**Read this before trusting the table.** The test split was run once, before the final setting (8 passages) was chosen,
+so the test row describes an earlier configuration. The shipped setting was only evaluated on dev, the set everything
+was tuned on, so expect real-world accuracy nearer the test column. Against the project's targets (recall@5 >= 0.80,
+accuracy 60-75%, faithfulness >= 0.90) the held-out numbers fall short on all three; only p50 latency under 4 s is met.
 
-### Ablation (dev split, one run each; changes after row 1 are stacked on the kept ones)
+- *Recall@5* is page-level: 1 if any of the top 5 retrieved pages is a gold page. *MRR* is the reciprocal rank of the
+  first gold page. *Accuracy* is an LLM judge comparing the answer with the gold answer. *Faithfulness* is the share of
+  claims in an answer supported by the retrieved passages, over answered questions only.
+- The same model family answers and judges. There is no human review.
+
+### What each change did (dev split, one run each)
 
 | # | Change | Recall@5 | MRR | Accuracy | Faithfulness | Decision |
 |---|---|---|---|---|---|---|
-| 0 | Baseline: dense + BM25 + RRF, no filter, no rerank | 0.172 | 0.108 | 0.207 | 0.947 (n=10) | baseline |
-| 1 | + company / fiscal-year metadata filter (rule-based router) | 0.207 | 0.124 | 0.448 | 0.900 (n=17) | keep |
-| 2 | + cross-encoder rerank | 0.172 | 0.099 | 0.310 | 0.905 (n=13) | revert |
-| 8 | + router reads "FY22" and takes the latest year when several are named | 0.310 | 0.153 | 0.517 | 0.904 (n=19) | keep |
-| 9 | + drop chunks under 15 tokens at retrieval | 0.345 | 0.196 | 0.517 | 0.909 (n=19) | keep |
-| 10 | **Index v2**: embedder-tokenizer chunk sizing, table row groups with repeated headers, rich prefix, mxbai-large, stemmed BM25 | 0.517 | 0.411 | 0.552 | 0.908 (n=21) | keep |
-| 11 | Query instruction prefix (offline only) | 0.517 | 0.379 | n/a | n/a | not adopted |
-| 12 | Weighted fusion, BM25 weight 1.0 -> 0.25 | **0.586** | **0.452** | **0.586** | **0.930 (n=22)** | **keep (final)** |
-| 13 | Parent expansion (whole table for generation) | 0.586 | 0.452 | 0.586 | 0.930 | not adopted (no change) |
-| 14 | Numeric-reasoning prompt `grounded_v2` | 0.586 | 0.452 | 0.552 | 0.846 | revert |
-| 15 | 4 cross-encoder rerankers, offline | best 0.621 | all < 0.452 | n/a | n/a | not adopted |
-| 16 | `top_n` 5 -> 8 (chunks given to the LLM) | 0.586 | 0.452 | **0.690** | **0.940 (n=25)** | **keep (shipped)**; dev only, test was run with 5 |
+| 0 | Baseline: dense + BM25 + RRF, no filter | 0.172 | 0.108 | 0.207 | 0.947 (n=10) | baseline |
+| 1 | Company and fiscal-year filter (rule-based router) | 0.207 | 0.124 | 0.448 | 0.900 (n=17) | keep |
+| 2 | Cross-encoder rerank | 0.172 | 0.099 | 0.310 | 0.905 (n=13) | reverted |
+| 8 | Router reads "FY22" and picks the latest year | 0.310 | 0.153 | 0.517 | 0.904 (n=19) | keep |
+| 9 | Drop chunks under 15 tokens at retrieval | 0.345 | 0.196 | 0.517 | 0.909 (n=19) | keep |
+| 10 | Index v2: tokenizer-aware chunking, table row groups, rich prefix, `mxbai-embed-large-v1`, stemmed BM25 | 0.517 | 0.411 | 0.552 | 0.908 (n=21) | keep |
+| 11 | Query instruction prefix (offline) | 0.517 | 0.379 | n/a | n/a | rejected |
+| 12 | Weighted fusion, BM25 weight 1.0 to 0.25 | 0.586 | 0.452 | 0.586 | 0.930 (n=22) | keep |
+| 13 | Whole-table expansion for generation | 0.586 | 0.452 | 0.586 | 0.930 | rejected (no change) |
+| 14 | Numeric-reasoning prompt | 0.586 | 0.452 | 0.552 | 0.846 | reverted |
+| 15 | Four other rerankers (offline) | best 0.621 | all < 0.452 | n/a | n/a | rejected |
+| 16 | Passages given to the LLM: 5 to 8 | 0.586 | 0.452 | **0.690** | **0.940 (n=25)** | **keep (shipped)** |
 
-Experiments 3 to 7 are pilots or duplicates of the rows above; the full log, with run files and notes, is in
-`docs/experiments.md`. The BM25 weight (row 12) was chosen on dev from three values, so the dev numbers are slightly optimistic.
+Experiments 3 to 7 were pilots or repeats of the rows above. Ties of one to two questions are within run-to-run noise
+(an unchanged configuration swapped one question each way once); the log records which gains were more than that.
+The citation parser was also fixed after the test run: the model often writes `【doc p.N】` with full-width brackets and
+the old parser found a citation in only 72 of 153 saved answers that named a document, the new one in 151
+(`docs/experiments.md`, experiment 19). Metrics are unaffected, because the answer text is never rewritten.
 
 ## Architecture
 
-```
-OFFLINE  (python -m src.jobs.index_corpus)
-data/raw/*.pdf -> ingestion (PyMuPDF, tables kept) -> chunking v2 (page parents, table parents, child chunks,
-                  context prefix; sized with the embedder's own tokenizer)
-   -> embeddings (mxbai-embed-large-v1, CPU, resumable shards) -> embedded Qdrant + bm25s (stemmed)
-   -> .cache/index/v2  (+ manifest: model, chunking and tokenizer params; a mismatch refuses to load)
-
-ONLINE   (src/pipelines/query_pipeline.py, served by src/api/routes.py)
-question -> redact PII -> ACL -> semantic cache (hit? return)
-   -> router (company + fiscal year filter, in scope?)
-   -> dense top 20 + BM25 top 20 -> weighted RRF (1.0 : 0.25) -> top 8 chunks      [cross-encoder rerank: built, OFF]
-   -> grounded answer via LLMClient (disk cache, key rotation, retries, per-key request and token budgets)
-   -> QueryResult(answer, citations, contexts, latency_ms)
-```
-
-Details, schemas and every config default: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). All settings live in `config.yaml`.
-
-## Run it
-
-Requirements: Python 3.13 (the tests ran on 3.13.3), ~1 GB for the embedding model, three Groq API keys
-(free accounts) in `.env`:
-
-```
-GROQ_API_KEY_1=...
-GROQ_API_KEY_2=...
-GROQ_API_KEY_3=...
+```mermaid
+flowchart LR
+  subgraph Offline["Offline (index build, about 1.6 h CPU)"]
+    A[10-K PDFs] --> B[PyMuPDF parse<br/>tables kept] --> C[Chunker v2<br/>page + table parents,<br/>embedder-tokenizer sizing]
+    C --> D[mxbai-embed-large-v1<br/>CPU, resumable shards]
+    D --> E[(Embedded Qdrant)]
+    C --> F[(BM25, stemmed)]
+  end
+  subgraph Online["Online (per question)"]
+    Q[Question] --> G[Redact PII<br/>ACL] --> H{Cache hit?}
+    H -- yes --> R
+    H -- no --> I[Router<br/>company + fiscal year] --> J[Dense top 20 + BM25 top 20<br/>weighted RRF] --> K[Top 8 passages] --> L[Groq gpt-oss-120b<br/>grounded prompt] --> R[Answer + citations +<br/>sources + timings]
+  end
+  E --> J
+  F --> J
 ```
 
-### Locally
+- **Router.** A rule-based detector finds the company and fiscal year in the question and restricts retrieval to that
+  filing. A question that names no known company gets "I don't know" with no model call.
+- **Retrieval.** Dense and BM25 candidates are fused with weighted reciprocal-rank fusion (1.0 dense : 0.25 BM25).
+  Chunks are sized with the embedding model's own tokenizer, so a table is never silently truncated; large tables are
+  split into row groups with repeated headers. A cross-encoder reranker exists and is switched off: it lowered MRR.
+- **Generation.** The model sees only the retrieved passages and must cite `[doc_id p.N]` or answer exactly
+  `I don't know`. All LLM calls go through one client with a disk cache, key rotation, retries, backoff and per-key daily
+  request and token budgets (it stops at 80%).
+- **Index safety.** Each index carries a manifest (model, chunking and tokenizer parameters). Loading refuses a mismatch,
+  and a protected version (v1, the rollback) cannot be rebuilt.
+
+Full design, schemas and every default: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+## Quick start
+
+Requirements: Python 3.13 (the tests run on 3.13.3), about 1 GB of disk for the embedding model, Node 20+ only if you
+run the frontend tests. Windows shown first; on Linux or macOS use `source .venv/bin/activate`.
 
 ```bash
-python -m venv .venv && .venv/Scripts/activate        # Linux/macOS: source .venv/bin/activate
+python -m venv .venv && .venv\Scripts\activate
 pip install -r requirements.txt
-pytest                                                 # 232 tests, no network or API keys needed
-
-python main.py                                         # API on http://127.0.0.1:8000 (api.host / api.port)
-curl localhost:8000/health
-curl -X POST localhost:8000/query -H "Content-Type: application/json" \
-     -d '{"question": "What was Adobe total revenue in fiscal year 2022?"}'
+cp .env.example .env        # (Windows: copy) then add your Groq keys: three free accounts, or one
+pytest                      # Python suite; no API keys needed
 ```
 
-The API needs the prebuilt index in `.cache/index/v2`. It is not in git. Building it is offline work
-(`python -m src.jobs.prepare_data`, then `python -m src.jobs.index_corpus`; about 1.6 h of CPU embedding, resumable).
-Index v1 is kept as the rollback (`config.v1.yaml`) and is protected from rebuilds.
+The API needs the prebuilt index in `.cache/index/v2`. It is not in git. Build it once (offline, resumable):
+
+```bash
+python -m src.jobs.prepare_data      # download the 10-K PDFs and questions, freeze the dev/test split
+python -m src.jobs.index_corpus      # parse, chunk, embed, build Qdrant + BM25 (about 1.6 h on a laptop CPU)
+```
+
+### Run the API and the web UI
+
+```bash
+python main.py                                   # API on http://127.0.0.1:8000
+FINRAG_CORS_ORIGINS=http://localhost:5173 python main.py   # same, allowing the local UI (PowerShell: $env:FINRAG_CORS_ORIGINS=...)
+python -m http.server 5173 --directory frontend  # UI on http://localhost:5173 (config.js points at localhost:8000)
+```
 
 ### Docker
 
 ```bash
-docker compose up --build            # serves http://localhost:8000, needs .env and .cache/index/v2 at build time
+docker compose up --build        # http://localhost:8000; needs .env and .cache/index/v2 at build time
 ```
 
-The image (python 3.13-slim, about 3.3 GB) bakes in the v2 index and the embedding model, so it starts offline;
-the keys come from `.env` at run time and are never in the image. `./.cache/llm` is mounted so the container and the
-host share one LLM response cache and one set of per-key daily budget counters. The semantic cache inside the
-container is not persisted. Verified: `/health` reports healthy, and `/query` answered a cached question and a new one.
+The image (python:3.13-slim, about 3.3 GB) bakes in the v2 index and the embedding model, so it starts offline. Keys come
+from `.env` at run time and are never in the image. `./.cache/llm` is mounted so the container and the host share one
+LLM cache and one set of budget counters.
 
-### API
-
-| Route | Behaviour |
-|---|---|
-| `GET /health` | `{"status": "ok"}`, no models loaded |
-| `POST /query` `{question, user?}` | `QueryResult`; 422 for a blank or too long question; 503 when the LLM budget is nearly used or the provider is down |
-
-`acl.users` in `config.yaml` restricts a user to some companies (`{alice: [Adobe]}`); a restricted user who names no
-permitted company gets `I don't know` with no retrieval and no LLM call. E-mails and phone numbers in questions are redacted before
-they reach the logs, the cache, the retriever or the LLM. Every stage writes a JSON line with its latency to `logs/app.log`.
-
-### Evaluate
+### Tests
 
 ```bash
-python -m src.jobs.eval_nightly --split dev --limit 5     # smoke test
-python -m src.jobs.eval_nightly --split dev               # full dev run (about 70-90 requests if nothing is cached)
+pytest                                 # Python: retrieval, cache, ACL, rate limit, API, export, eval metrics
+cd frontend && npm test                # Node built-in runner: answer rendering (XSS cases), citations, errors
+python -m src.jobs.eval_nightly --split dev --limit 5   # smoke eval (a few LLM calls per question; cached after the first run)
 ```
 
-The test split needs `--final` and was run once. Do not use it for tuning.
+## API
+
+| Route | Description |
+|---|---|
+| `GET /health` | `{"status": "ok"}`. Instant, loads no models, never rate limited. |
+| `POST /query` | Body `{"question": "...", "user": "optional"}`. Returns a `QueryResult`. |
+
+```bash
+curl -X POST http://localhost:8000/query -H "Content-Type: application/json" \
+     -d '{"question": "What was Adobe total revenue in fiscal year 2022?"}'
+```
+
+```json
+{
+  "answer": "Adobe reported total revenue of **$17,606 million** for fiscal year 2022 [ADOBE_2022_10K p.65].",
+  "citations": [{"doc_id": "ADOBE_2022_10K", "page": 65}],
+  "contexts": ["...8 retrieved passages, as text..."],
+  "sources": [{"doc_id": "ADOBE_2022_10K", "page": 65}, "...one per context, same order..."],
+  "latency_ms": {"retrieve": 311.0, "rerank": 0.0, "llm": 1180.0, "total": 1500.0}
+}
+```
+
+`citations` are the pages the answer cites, restricted to pages that were retrieved. A cached answer has
+`latency_ms: {"cache": ..., "total": ...}`. The numbers in the example are illustrative.
+
+| Status | Meaning |
+|---|---|
+| 401 | `api.require_api_key` is on and `X-API-Key` is missing or wrong |
+| 422 | Blank question, or longer than `api.max_question_chars` (2000) |
+| 429 | Per-IP rate limit; `Retry-After` gives the wait in seconds |
+| 503 | Daily global cap reached, the LLM quota is nearly used, or the LLM provider is down; `Retry-After` is set for the cap |
+
+## Configuration
+
+Everything lives in [`config.yaml`](config.yaml); there are no magic numbers in the code. Secrets come from the
+environment ([`.env.example`](.env.example)). The ones you are most likely to change:
+
+| Setting | Default | Effect |
+|---|---|---|
+| `rerank.top_n` | 8 | Passages given to the LLM (experiment 16) |
+| `retrieval.bm25_weight` | 0.25 | Weight of keyword search in the fusion (experiment 12) |
+| `index.version` | v2 | Which prebuilt index to load; `config.v1.yaml` selects the v1 rollback |
+| `api.rate_limit` | 5 / minute, 40 / day per IP | Per-client sliding windows |
+| `api.daily_global_cap` | 180 | Accepted questions per UTC day over all clients |
+| `api.cors_origins`, `FINRAG_CORS_ORIGINS` | none | Browser origins allowed to call the API |
+| `api.require_api_key`, `FINRAG_API_KEY` | off | Private mode, or an owner key that skips the per-IP limit |
+| `api.trusted_proxy_hops` | 1 | Proxies in front of the app, used to find the real client address |
+| `cache.threshold` | 0.95 | Similarity needed for a semantic cache hit |
+| `llm.primary.daily_token_budget` | 200000 | Per-key daily token budget (client stops at 80%) |
+
+The semantic cache is keyed on every setting that shapes an answer (index, retrieval, rerank, generation, model), so a
+config or parser change never serves an old answer; bump `cache.version` when the result format changes.
+
+## Security and abuse protection
+
+A public demo spends a shared free quota, so the API defends it. On `POST /query`, in this order:
+
+1. **API key** (optional). `require_api_key: true` closes the API to callers without the key (fails closed if no key is set).
+2. **Per-IP limit.** 5 per minute and 40 per day per client; a valid owner key skips it. Blocked requests cost nothing
+   and do not extend the block. The client address is the entry `trusted_proxy_hops` from the right of `X-Forwarded-For`,
+   because entries added by the client on the left can be forged.
+3. **Daily global cap.** 180 accepted calls per UTC day over all clients, persisted so a restart does not reset it. The
+   cap is sized so that it cannot outspend the usable Groq tokens (see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)).
+
+Also: CORS only for configured origins (and it stays readable on 429/503, so the UI can show a countdown), invalid
+requests count against the limit, the question is redacted of e-mail addresses and phone numbers before it reaches logs,
+cache, retriever or LLM, and the web UI treats model output as untrusted (everything is escaped; strict CSP; no inline
+scripts or styles). Request logs record a salted hash of the client, status and timings, never the address or the question;
+the container runs with the web server's own access log off, because that log prints client addresses.
+
+What this does **not** do: a determined attacker with many IP addresses is bounded only by the daily cap, not by the
+per-IP limit. Any key placed in browser JavaScript is public, so for the public site the protection is the limits and the
+cap, not a secret. The `user` field of the request selects an ACL and is trusted: do not use ACLs as an access boundary on
+a public endpoint.
+
+## Evaluation
+
+- Data: FinanceBench open-source questions for 10 companies; fixed split, 29 dev and 29 test (seed 42). The test split is
+  refused by the eval job unless `--final` is passed and was used once.
+- `python -m src.jobs.eval_nightly --split dev` runs the pipeline and the two judges; results go to `data/eval/runs/`.
+  A full run with every answer regenerated costs about 70 to 90 requests and 70k to 110k tokens. Cached runs cost nothing.
+- Offline tools that make no LLM calls: `compare_indexes`, `fusion_sweep`, `rerank_dev`, `pilot_bakeoff`, `bench_embed`.
 
 ## Limitations
 
-- **Small subset.** About 10 companies, 29 dev and 29 test questions, so one question is 0.034 of any metric and the
-  results do not generalise to all filings. Dev to test dropped by 5 accuracy questions; with this n a difference of
-  1 to 2 questions is noise, and part of the gap can come from choosing the BM25 weight on dev.
-- **LLM-as-judge.** Accuracy and faithfulness are judged by the same model that answers (`gpt-oss-120b`), not by humans.
-- **Multi-page questions.** Ratios that need two statements fail when only one page is retrieved, and page-level recall@5 hides it.
-- **Citations.** The model does not always use the requested `[doc_id p.N]` form (about 40% of its citations used full-width `【…】` brackets). The parser now accepts those, other bracket and space variants, page ranges and several documents in one bracket, and keeps only pages that were retrieved; the old parser missed about half of the cited answers. The run file of the test split was made with the old parser, so its `citations` are incomplete (metrics are not affected).
-- **No OCR.** Scanned or image-only pages are skipped.
-- **Free tier limits.** Groq allows 200,000 tokens/day per account; `LLMClient` counts them and stops at 80%. One full
-  uncached eval of 29 questions used about 104,000 tokens over the three keys.
-- **No reranker.** It lowered MRR on every candidate tried (a rerank that helped took ~12 s per question on CPU).
-- **Not deployed.** The Hugging Face Spaces deploy from the original plan was not done.
-- Untested ideas: statement-type boost, ratio-term expansion, multi-page diversification of the context.
+- **Small sample.** 22 filings, 10 companies, 29 questions per split: results do not generalise to all filings, and the
+  shipped setting is only validated on the split it was tuned on.
+- **Roughly half the answers are wrong.** On the held-out test, 17 of 29 were judged wrong or "I don't know". Treat an
+  answer as a pointer to the right passage, not a verified figure; the UI is built around that (citations open the passage).
+- **LLM-as-judge.** Accuracy and faithfulness are scored by the model family that answers; no human review.
+- **Multi-page questions.** Ratios that need two statements fail when only one page is retrieved; page-level recall hides it.
+- **Text and tables only.** Scanned or image-only pages are skipped (no OCR); charts are not read.
+- **Free-tier limits.** Groq allows 200,000 tokens per day per key; the system stops at 80% and the public demo has a hard
+  daily cap. A free host sleeps when idle, so the first request after a pause is slow; the UI warns and polls `/health`.
+- **Untested ideas.** A statement-type boost, ratio-term expansion, multi-page diversification of the context and
+  sentence-aware windowing are recorded in `docs/experiments.md` but were not tried.
 
-## Layout
+## Repository layout
 
-`src/{ingestion,chunking,embeddings,vector_db,lexical,retrieval,rerank,query,cache,prompts,llm,generation,eval,observability,security,api,pipelines,jobs}`,
-`tests/`, `config.yaml`, `main.py`, `Dockerfile`, `docker-compose.yaml`, `docs/` (architecture, experiments, plan).
+```
+config.yaml            all settings              main.py            API entry point
+src/ingestion, chunking, embeddings, vector_db, lexical     offline: parse, chunk, embed, index
+src/retrieval, query, rerank, generation, prompts, llm      online: route, retrieve, answer
+src/cache, security, observability, api                     semantic cache, ACL + rate limits, tracing, FastAPI
+src/pipelines, jobs, eval                                   orchestration, CLI jobs, metrics
+frontend/              static web UI (no framework, no build step; Vercel-ready)
+tests/                 Python tests          frontend/test   Node tests
+docs/                  ARCHITECTURE.md, DEPLOYMENT.md, experiments.md, plan and prompts
+Dockerfile, docker-compose.yaml, .env.example
+```
+
+<p align="center"><img src="docs/images/mobile.png" alt="FinRag on a phone" width="280"></p>
+
+## Acknowledgements and licence
+
+Questions and gold answers come from [FinanceBench](https://github.com/patronus-ai/financebench) (Patronus AI); the filings
+are public SEC documents. This project is not affiliated with the companies, Patronus AI or the SEC and is not financial
+advice. No licence file has been chosen yet, so the code is currently all rights reserved by default.
