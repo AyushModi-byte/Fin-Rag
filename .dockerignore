@@ -1,0 +1,18 @@
+.git
+.venv
+.env
+__pycache__
+*.pyc
+.pytest_cache
+logs
+data/raw
+data/parsed
+data/eval/runs
+docs
+tests
+# only the serving part of index v2 goes into the image (no shards, no v1, no caches)
+.cache/*
+!.cache/index
+.cache/index/*
+!.cache/index/v2
+.cache/index/v2/shards

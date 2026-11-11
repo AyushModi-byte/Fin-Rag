@@ -1,0 +1,19 @@
+services:
+  finrag:
+    image: finrag:latest
+    build: .
+    container_name: finrag
+    ports:
+      - "8000:8000"
+    env_file: .env          # GROQ_API_KEY_1..3 (never baked into the image)
+    volumes:
+      # LLM disk cache and per-key daily budget counters, shared with the host so the same keys are
+      # counted once and cached answers are reused
+      - ./.cache/llm:/app/.cache/llm
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
