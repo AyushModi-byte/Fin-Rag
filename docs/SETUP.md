@@ -36,7 +36,7 @@
 - The Groq free tier has low limits, and tokens per day (200,000 per account) run out before requests per day. The LLM client throttles, caches, rotates between the three keys, counts requests and tokens per key per day, and stops at 80% of either budget (`BudgetNearlyExhausted`). Reruns of the same eval are free thanks to the cache.
 - Claude Code must not burn the keys: smoke tests use `--limit 5`, the full dev eval runs only after a real change. The rules are in `CLAUDE.md`.
 - If all keys are limited, Claude Code works on offline tasks (tests, chunking, indexing, docs) instead of waiting.
-- Hugging Face Spaces: add `GROQ_API_KEY_1`, `GROQ_API_KEY_2` and `GROQ_API_KEY_3` as Space secrets, never in the repo.
+- Keys live only in `.env` (git-ignored) or in your host's secret store, never in the repo or the Docker image. See `.env.example`.
 
 ## Time estimate
 

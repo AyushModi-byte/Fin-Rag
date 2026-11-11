@@ -19,6 +19,7 @@ COPY --chown=finrag:finrag data/eval/docs.json data/eval/docs.json
 
 COPY --chown=finrag:finrag config.yaml main.py ./
 COPY --chown=finrag:finrag src src
+COPY --chown=finrag:finrag frontend frontend
 RUN mkdir -p logs .cache/llm .cache/state && chown -R finrag:finrag /app
 
 USER finrag

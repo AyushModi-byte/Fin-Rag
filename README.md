@@ -12,10 +12,9 @@ model. It covers a fixed subset of 22 annual reports from 10 companies (a slice 
 [FinanceBench](https://github.com/patronus-ai/financebench) benchmark), and every design decision, including the ones
 that did not work, is logged with its measurements in [`docs/experiments.md`](docs/experiments.md).
 
-**Status.** The system, API hardening, web UI and Docker image are built and tested locally. The deployment path that costs
-nothing and needs no card is: UI on Vercel (free), API in Docker on your own machine exposed through a free Cloudflare
-quick tunnel (`python -m src.jobs.go_live`), so it is live only while you run it. Details, trade-offs and why Hugging Face
-Spaces and Render were ruled out: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+**Status.** Finished and tested; runs locally and in Docker. It is **not deployed**: no free host fits an app that needs
+about 2 GB of RAM (Hugging Face Docker Spaces turned out to be a paid feature), and a paid host was ruled out. What was checked
+and what hosting it would take are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Contents
 
@@ -118,30 +117,37 @@ python -m src.jobs.prepare_data      # download the 10-K PDFs and questions, fre
 python -m src.jobs.index_corpus      # parse, chunk, embed, build Qdrant + BM25 (about 1.6 h on a laptop CPU)
 ```
 
-### Run the API and the web UI
+### Run it and try it
 
 ```bash
-python main.py                                   # API on http://127.0.0.1:8000
-FINRAG_CORS_ORIGINS=http://localhost:5173 python main.py   # same, allowing the local UI (PowerShell: $env:FINRAG_CORS_ORIGINS=...)
-python -m http.server 5173 --directory frontend  # UI on http://localhost:5173 (config.js points at localhost:8000)
+python main.py                 # then open http://localhost:8000
 ```
 
-### Docker
+That is the whole app: the API serves the web UI at `/` (same origin, so no CORS setup), and `/health` and `/query` next to
+it. Interactive API docs are at `/docs`. Needs `.env` with at least one Groq key and the built index (above).
 
 ```bash
-docker compose up --build        # http://localhost:8000; needs .env and .cache/index/v2 at build time
-python -m src.jobs.go_live --origin https://<your-ui>.vercel.app --push   # same, plus a public https tunnel (see docs/DEPLOYMENT.md)
+docker compose up --build      # the same app in a container: http://localhost:8000
 ```
 
-The image (python:3.13-slim, about 3.3 GB) bakes in the v2 index and the embedding model, so it starts offline. Keys come
-from `.env` at run time and are never in the image. `./.cache/llm` is mounted so the container and the host share one
-LLM cache and one set of budget counters.
+The image (python:3.13-slim, about 3.3 GB) bakes in the v2 index, the embedding model and the UI, so it starts offline. Keys come
+from `.env` at run time and are never in the image. `./.cache/llm` (LLM cache and per-key budget counters) and `./.cache/state`
+(semantic cache and the daily-cap counter) are mounted, so restarts keep them.
+
+What to try in the UI:
+
+- Click an example question, or ask one such as *What was Adobe's total revenue in fiscal year 2022?*. The first question after
+  starting is slower (about 12 s: the embedding model loads).
+- Click a citation chip: the retrieved passage it came from opens below. Ask something outside the 10 covered companies and
+  you get "I don't know" with no model call.
+- Ask 6 questions within a minute to see the rate limit (5 per minute), with a countdown.
+- Costs: a new question uses one Groq call (about 1.3k to 2.4k tokens); a repeated question is served from the cache for free.
 
 ### Tests
 
 ```bash
 pytest                                 # Python: retrieval, cache, ACL, rate limit, API, export, eval metrics
-cd frontend && npm test                # Node built-in runner: answer rendering (XSS cases), citations, errors
+cd frontend && npm test                # Node 20+, built-in runner: answer rendering (XSS cases), citations, errors
 python -m src.jobs.eval_nightly --split dev --limit 5   # smoke eval (a few LLM calls per question; cached after the first run)
 ```
 
@@ -209,7 +215,8 @@ A public demo spends a shared free quota, so the API defends it. On `POST /query
 3. **Daily global cap.** 180 accepted calls per UTC day over all clients, persisted so a restart does not reset it. The
    cap is sized so that it cannot outspend the usable Groq tokens (see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)).
 
-Also: CORS only for configured origins (and it stays readable on 429/503, so the UI can show a countdown), invalid
+Also: every response carries security headers and a strict Content-Security-Policy (no inline script or style, nothing from other
+origins), CORS is off unless origins are configured (and it stays readable on 429/503), invalid
 requests count against the limit, the question is redacted of e-mail addresses and phone numbers before it reaches logs,
 cache, retriever or LLM, and the web UI treats model output as untrusted (everything is escaped; strict CSP; no inline
 scripts or styles). Request logs record a salted hash of the client, status and timings, never the address or the question;
@@ -250,7 +257,7 @@ src/ingestion, chunking, embeddings, vector_db, lexical     offline: parse, chun
 src/retrieval, query, rerank, generation, prompts, llm      online: route, retrieve, answer
 src/cache, security, observability, api                     semantic cache, ACL + rate limits, tracing, FastAPI
 src/pipelines, jobs, eval                                   orchestration, CLI jobs, metrics
-frontend/              static web UI (no framework, no build step; Vercel-ready)
+frontend/              web UI: plain HTML, CSS and JS, no framework, no build step; served by the API
 tests/                 Python tests          frontend/test   Node tests
 docs/                  ARCHITECTURE.md, DEPLOYMENT.md, experiments.md, plan and prompts
 Dockerfile, docker-compose.yaml, .env.example

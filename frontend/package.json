@@ -5,7 +5,6 @@
   "type": "module",
   "description": "Static frontend for the FinRag API. No build step, no runtime dependencies.",
   "scripts": {
-    "test": "node --test test/*.test.mjs",
-    "serve": "python -m http.server 5173"
+    "test": "node --test test/*.test.mjs"
   }
 }

@@ -8,8 +8,11 @@ Public-API guard on POST /query, in this order (a request stopped by a step neve
   2. Per-IP    - sliding-window limit per client IP (429 + Retry-After); a valid owner key skips it.
   3. Daily cap - `api.daily_global_cap` accepted calls per UTC day over all clients (503 + Retry-After),
                  protecting the free-tier Groq token budget.
-Rate-limited and unauthorised calls cost nothing. Every guarded call is logged with a hashed client label,
-never the address or the question. CORS is allowed only for `api.cors_origins` (+ FINRAG_CORS_ORIGINS).
+Rate-limited and unauthorised calls cost nothing. Every guarded call is logged with a hashed client label, never the
+address or the question. CORS is allowed only for `api.cors_origins` (+ FINRAG_CORS_ORIGINS).
+
+With `api.frontend_dir` set, the API also serves the web UI at / (same origin, so no CORS is needed), and every response
+carries security headers and a strict Content-Security-Policy.
 """
 import hmac
 import logging
@@ -17,10 +20,12 @@ import os
 import secrets
 import threading
 import time
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
 
 from src.config import load_config
@@ -49,6 +54,18 @@ def _default_factory(cfg):
     from src.pipelines.query_pipeline import build_pipeline
 
     return build_pipeline(cfg, with_cache=True)
+
+
+# No inline script or style, nothing from other origins: the UI is plain files and calls only its own API.
+CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; "
+       "base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "X-Frame-Options": "DENY",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+}
+CSP_EXEMPT = ("/docs", "/redoc", "/openapi.json")  # Swagger UI loads its script from a CDN
 
 
 def _origins(cfg, env) -> list[str]:
@@ -105,6 +122,15 @@ def create_app(pipeline=None, cfg=None, pipeline_factory=_default_factory, clock
         )
         return response
 
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)  # added after `guard`, so it also covers its 401/429/503 answers
+        for k, v in SECURITY_HEADERS.items():
+            response.headers[k] = v
+        if not request.url.path.startswith(CSP_EXEMPT):
+            response.headers["Content-Security-Policy"] = CSP
+        return response
+
     def get_pipeline():
         if state["pipeline"] is None:
             state["pipeline"] = pipeline_factory(cfg)
@@ -127,6 +153,10 @@ def create_app(pipeline=None, cfg=None, pipeline_factory=_default_factory, clock
         except LLMError as e:
             log.warning("LLM failure: %s", e)
             raise HTTPException(status_code=503, detail="LLM temporarily unavailable; try later") from e
+
+    ui_dir = getattr(api, "frontend_dir", None)
+    if ui_dir and Path(ui_dir).is_dir():  # mounted last: the API routes above always win
+        app.mount("/", StaticFiles(directory=ui_dir, html=True), name="ui")
 
     origins = _origins(cfg, env)
     if origins:  # added last = outermost, so preflights, 401s, 429s and 503s all carry CORS headers

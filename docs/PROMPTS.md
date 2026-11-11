@@ -2,7 +2,10 @@
 
 ## Where we are (updated 2026-11-10)
 
-Tasks 1-11 are DONE (Task 11: Dockerfile + docker-compose.yaml verified, test split run once, README). Not done from the original plan: Hugging Face Spaces deploy and the `v1.0` tag (outward-facing; waiting for the user). Do not tune after the test run.
+All work is DONE (Tasks 1-13): the RAG pipeline and tuning (1-9), cache, tracing, ACL, API (10), Docker, final test run and README (11),
+API hardening: rate limit, daily cap, key, CORS, logs (12), web UI served by the API (13), plus `top_n` 8 (experiment 16) and the
+citation parser fix (experiment 19). The project is **finished and not deployed, by decision**: no free host fits (see
+`docs/DEPLOYMENT.md`). Do not tune after the test run; the test split was run once.
 
 Last kept dev result, which Task 10 re-checked (experiment 12, run `20261110T140849_dev.json`; re-run for Task 10 gave the identical four numbers, experiment 17): recall@5 0.586, MRR 0.452, accuracy 0.586, faithfulness 0.930. The test split was run once in Task 11 (recall@5 0.552, MRR 0.324, accuracy 0.414, faithfulness 0.842); it must not be used for tuning.
 
