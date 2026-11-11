@@ -10,7 +10,7 @@ citation parser fix (experiment 19). The project is **finished and not deployed,
 Last kept dev result, which Task 10 re-checked (experiment 12, run `20261110T140849_dev.json`; re-run for Task 10 gave the identical four numbers, experiment 17): recall@5 0.586, MRR 0.452, accuracy 0.586, faithfulness 0.930. The test split was run once in Task 11 (recall@5 0.552, MRR 0.324, accuracy 0.414, faithfulness 0.842); it must not be used for tuning.
 
 Things the Task 10 and 11 prompts below do not say, but you should know:
-- Run pytest with the real exit status (no piping): 232 tests pass at this point. FastAPI/uvicorn are now in `requirements.txt` (the `.venv` needed `pip install`).
+- Run pytest with the real exit status (no piping): 298 Python tests and 40 frontend tests (`cd frontend && npm test`) pass at this point. FastAPI/uvicorn are now in `requirements.txt` (the `.venv` needed `pip install`).
 - The index is `.cache/index/v2` (294 MB, not committed, built with mxbai-large). For Task 11 the Docker image must mount it or rebuild it (about 1.6 h of CPU embedding), and the image needs the embedding model files (0.64 GB) and the Groq keys as `GROQ_API_KEY_1..3` (not `GEMINI_API_KEY`).
 - Task 11's plan text still says "GEMINI_API_KEY as a secret" and "rerank" in the target metrics; both are out of date (Groq only; rerank is off).
 - Before the Task 11 test run, check `LLMClient` token budgets: a full run regenerates about 29+ answers and judge calls on a split of unknown size.
